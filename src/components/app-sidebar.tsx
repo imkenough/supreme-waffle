@@ -11,7 +11,6 @@ import {
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -31,28 +30,28 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: LayoutDashboard,
       isActive: true,
     },
     {
       title: "Charts",
-      url: "#",
+      url: "/charts",
       icon: PieChart,
     },
     {
       title: "Logs",
-      url: "#",
+      url: "/logs",
       icon: FileText,
     },
     {
       title: "Pinouts/Diagrams/Docs",
-      url: "#",
+      url: "/docs",
       icon: BookOpen,
     },
     {
       title: "Fault/Err History",
-      url: "#",
+      url: "/fault-history",
       icon: ShieldAlert,
     },
   ],
@@ -71,7 +70,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           items={[
             {
               title: "Settings",
-              url: "#",
+              url: "/settings",
               icon: Settings2,
             },
           ]}

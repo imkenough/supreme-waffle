@@ -1,11 +1,11 @@
-import Page from "./app/dashboard/page";
+import { Outlet } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 
 function App() {
   return (
     <div>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <Page />
+        <Outlet />
       </ThemeProvider>
     </div>
   );
