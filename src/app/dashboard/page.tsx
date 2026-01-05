@@ -188,6 +188,12 @@ export default function Page() {
                     <StatusLabel>Responding</StatusLabel>
                   </Status>
                 </div>
+                <div className="flex items-center justify-between">
+                  <span>Last Command</span>
+                  <span className="text-sm text-muted-foreground">
+                    2026-01-05 10:30:00
+                  </span>
+                </div>
               </CardContent>
             </Card>
             <Card className="h-full">
