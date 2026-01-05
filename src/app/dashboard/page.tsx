@@ -63,8 +63,8 @@ export default function Page() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <Card>
+          <div className="grid h-full grid-cols-1 grid-rows-2 gap-4 lg:grid-cols-2">
+            <Card className="h-full">
               <CardHeader>
                 <CardTitle>Motor Control</CardTitle>
               </CardHeader>
@@ -101,13 +101,13 @@ export default function Page() {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="h-full">
               <div className="p-4">Card Content 2</div>
             </Card>
-            <Card>
+            <Card className="h-full">
               <div className="p-4">Card Content 3</div>
             </Card>
-            <Card>
+            <Card className="h-full">
               <div className="p-4">Card Content 4</div>
             </Card>
           </div>
