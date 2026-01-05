@@ -80,24 +80,34 @@ export default function Page() {
                   >
                     Motor Hertz (0-60Hz)
                   </label>
-                  <Input
-                    id="motor-hertz"
-                    type="number"
-                    min="0"
-                    max="60"
-                    value={motorHertz.toFixed(2)}
-                    onChange={handleInputChange}
-                    className="mt-1"
-                  />
-                  <Slider
-                    id="motor-hertz-slider"
-                    min={0}
-                    max={60}
-                    step={0.01}
-                    value={[motorHertz]}
-                    onValueChange={handleSliderChange}
-                    className="mt-2"
-                  />
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="motor-hertz"
+                      type="number"
+                      min="0"
+                      max="60"
+                      value={motorHertz.toFixed(2)}
+                      onChange={handleInputChange}
+                      className="flex-1"
+                    />
+                    <span className="ml-auto">Hz</span>
+                  </div>
+                  <div className="relative mt-2">
+                    <Slider
+                      id="motor-hertz-slider"
+                      min={0}
+                      max={60}
+                      step={0.01}
+                      value={[motorHertz]}
+                      onValueChange={handleSliderChange}
+                      className="mt-2"
+                    />
+                    <div className="flex justify-between text-sm mt-1 px-1">
+                      <span>0Hz</span>
+                      <span>30Hz</span>
+                      <span>60Hz</span>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
