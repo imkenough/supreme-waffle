@@ -19,11 +19,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Status,
-  StatusIndicator,
-  StatusLabel,
-} from "@/components/ui/status";
+import { Status, StatusIndicator, StatusLabel } from "@/components/ui/status";
 import {
   SidebarInset,
   SidebarProvider,
@@ -137,19 +133,27 @@ export default function Page() {
               <CardContent className="flex flex-col h-full justify-between">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="text-sm font-medium text-gray-700">Frequency</div>
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Frequency
+                    </div>
                     <div className="text-lg font-bold">50.00 Hz</div>
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-gray-700">Current</div>
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Current
+                    </div>
                     <div className="text-lg font-bold">10.50 A</div>
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-gray-700">Voltage</div>
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Voltage
+                    </div>
                     <div className="text-lg font-bold">230.0 V</div>
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-gray-700">Fault</div>
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Fault
+                    </div>
                     <div className="text-lg font-bold text-green-500">None</div>
                   </div>
                 </div>
