@@ -1,15 +1,15 @@
 /*
-  ESP32 VFD Controller for Mitsubishi FR-E700 via SIM800C GPRS
+  ESP32 VFD Controller for Mitsubishi FR-E700 via SIM800C GPRS and MQTT
   
-  This program uses a SIM800C GPRS module to create a web server on the ESP32,
-  allowing remote control of a Mitsubishi FR-E700 VFD using Modbus RTU.
+  This program uses a SIM800C GPRS module to connect to an MQTT broker,
+  allowing remote control of a Mitsubishi FR-E700 VFD.
 
-  ** IMPORTANT NOTE ON GPRS SERVER **
-  This code sets up the ESP32 as a web server accessible via the GPRS network.
-  This may not work reliably due to mobile network restrictions like Carrier-Grade NAT (CG-NAT)
-  and firewalls, which can prevent incoming connections. A more robust solution is to use
-  an MQTT client on the ESP32 that connects to a cloud MQTT broker. The web application
-  would then communicate with the ESP32 through the MQTT broker.
+  ARCHITECTURE:
+  - The ESP32 connects to the internet via a SIM800C GPRS module.
+  - It then connects to an MQTT broker.
+  - It subscribes to a "control" topic to receive commands (e.g., start, stop, set frequency).
+  - It periodically reads the VFD status and publishes it to a "status" topic.
+  - The web frontend application also connects to the same MQTT broker to send commands and receive status updates.
 
   HARDWARE CONNECTIONS:
   ---------------------
@@ -31,15 +31,26 @@
   LIBRARY DEPENDENCIES:
   ---------------------
   - TinyGsmClient by Volodymyr Shymanskyy
+  - PubSubClient by Nick O'Leary
   - ModbusMaster by Doc Walker
+  - ArduinoJson by Benoit Blanchon
 
   Install these from the Arduino Library Manager.
 */
 
-// --- GPRS Configuration ---
-const char apn[] = "YOUR_APN"; // Your carrier's APN
-const char gprsUser[] = "";    // GPRS User, if required
-const char gprsPass[] = "";    // GPRS Password, if required
+#include "config.h"
+
+// --- GPRS and MQTT Configuration ---
+const char apn[] = GPRS_APN;
+const char gprsUser[] = GPRS_USER;    
+const char gprsPass[] = GPRS_PASS;    
+
+const char* mqtt_broker = MQTT_BROKER;
+const int mqtt_port = MQTT_PORT;
+const char* mqtt_username = MQTT_USERNAME;
+const char* mqtt_password = MQTT_PASSWORD;
+const char* mqtt_topic_control = "vfd/control";
+const char* mqtt_topic_status = "vfd/status";
 
 // Define the serial port for the SIM800C
 #define SerialAT Serial2
@@ -48,12 +59,13 @@ const char gprsPass[] = "";    // GPRS Password, if required
 #define MAX485_DE_RE_PIN 25
 #define VFD_SLAVE_ID 1
 
-// Modbus registers for FR-E700 (verify with manual)
+// Modbus registers (verify with manual)
 #define REG_CONTROL         8
 #define REG_SET_FREQUENCY   14
 #define REG_OUTPUT_FREQ     201
 #define REG_OUTPUT_CURRENT  202
 #define REG_OUTPUT_VOLTAGE  203
+#define REG_MOTOR_STATUS    200 // Example: may contain running status
 #define REG_FAULT_HISTORY   993
 
 // Modbus commands
@@ -61,12 +73,18 @@ const char gprsPass[] = "";    // GPRS Password, if required
 #define CMD_RUN_FORWARD     2
 
 #include <TinyGsmClient.h>
+#include <PubSubClient.h>
 #include <ModbusMaster.h>
+#include <ArduinoJson.h>
 
 // --- Globals ---
 TinyGsm modem(SerialAT);
-TinyGsmClient client(modem);
+TinyGsmClient gsmClient(modem);
+PubSubClient mqttClient(gsmClient);
 ModbusMaster node;
+
+unsigned long lastStatusPublish = 0;
+const long statusPublishInterval = 5000; // Publish status every 5 seconds
 
 void preTransmission() {
   digitalWrite(MAX485_DE_RE_PIN, HIGH);
@@ -74,6 +92,72 @@ void preTransmission() {
 
 void postTransmission() {
   digitalWrite(MAX485_DE_RE_PIN, LOW);
+}
+
+void setup_gprs() {
+  Serial.println("Initializing modem...");
+  SerialAT.begin(115200, SERIAL_8N1, 16, 17);
+  delay(6000);
+  modem.restart();
+
+  Serial.println("Waiting for network...");
+  if (!modem.waitForNetwork()) {
+    Serial.println(" failed to connect to network. Retrying...");
+    delay(10000);
+    ESP.restart();
+  }
+
+  Serial.println("Connecting to GPRS...");
+  if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
+    Serial.println(" failed to connect to GPRS. Retrying...");
+    delay(10000);
+    ESP.restart();
+  }
+  Serial.println("GPRS connected");
+}
+
+void mqtt_callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  
+  char message[length + 1];
+  memcpy(message, payload, length);
+  message[length] = '\0';
+  Serial.println(message);
+
+  StaticJsonDocument<200> doc;
+  deserializeJson(doc, message);
+
+  const char* command = doc["command"];
+
+  if (strcmp(command, "start") == 0) {
+    node.writeSingleRegister(REG_CONTROL, CMD_RUN_FORWARD);
+  } else if (strcmp(command, "stop") == 0 || strcmp(command, "emergency_stop") == 0) {
+    node.writeSingleRegister(REG_CONTROL, CMD_STOP);
+  } else if (strcmp(command, "set_frequency") == 0) {
+    float frequency = doc["frequency"];
+    if (frequency >= 0 && frequency <= 60) {
+      node.writeSingleRegister(REG_SET_FREQUENCY, (uint16_t)(frequency * 100));
+    }
+  }
+}
+
+void mqtt_reconnect() {
+  while (!mqttClient.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    String clientId = "esp32-vfd-client-";
+    clientId += String(random(0xffff), HEX);
+    if (mqttClient.connect(clientId.c_str(), mqtt_username, mqtt_password)) {
+      Serial.println("connected");
+      mqttClient.subscribe(mqtt_topic_control);
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(mqttClient.state());
+      Serial.println(" try again in 5 seconds");
+      delay(5000);
+    }
+  }
 }
 
 void setup() {
@@ -87,139 +171,53 @@ void setup() {
   node.preTransmission(preTransmission);
   node.postTransmission(postTransmission);
 
-  // --- GPRS Setup ---
-  Serial.println("Initializing modem...");
-  SerialAT.begin(115200, SERIAL_8N1, 16, 17);
-  delay(6000);
-  modem.restart();
+  setup_gprs();
+  
+  mqttClient.setServer(mqtt_broker, mqtt_port);
+  mqttClient.setCallback(mqtt_callback);
+}
 
-  Serial.println("Waiting for network...");
-  if (!modem.waitForNetwork()) {
-    Serial.println(" failed to connect to network");
-    while (true);
-  }
+void publishStatus() {
+  StaticJsonDocument<256> doc;
+  uint8_t result;
 
-  Serial.println("Connecting to GPRS...");
-  if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
-    Serial.println(" failed to connect to GPRS");
-    while (true);
-  }
+  // Read data from VFD
+  result = node.readHoldingRegisters(REG_OUTPUT_FREQ, 1);
+  doc["frequency"] = (result == node.ku8MBSuccess) ? node.getResponseBuffer(0) / 100.0 : 0;
+  
+  result = node.readHoldingRegisters(REG_OUTPUT_CURRENT, 1);
+  doc["current"] = (result == node.ku8MBSuccess) ? node.getResponseBuffer(0) / 100.0 : 0;
+  
+  result = node.readHoldingRegisters(REG_OUTPUT_VOLTAGE, 1);
+  doc["voltage"] = (result == node.ku8MBSuccess) ? node.getResponseBuffer(0) / 10.0 : 0;
 
-  Serial.println("GPRS connected");
-  Serial.print("IP address: ");
-  Serial.println(modem.localIP());
+  result = node.readHoldingRegisters(REG_MOTOR_STATUS, 1);
+  doc["motorState"] = (result == node.ku8MBSuccess && node.getResponseBuffer(0) != 0) ? "Running" : "Stopped";
+  
+  doc["vfd_responding"] = (result == node.ku8MBSuccess);
+
+  // You need to implement logic to calculate RPM based on frequency and motor poles
+  doc["rpm"] = (doc["frequency"] > 0) ? (int)((doc["frequency"].as<float>() / 60.0) * 3600 / 2) : 0; // Example for 2-pole motor
+
+  result = node.readHoldingRegisters(REG_FAULT_HISTORY, 1);
+  doc["fault"] = (result == node.ku8MBSuccess) ? String(node.getResponseBuffer(0)) : "N/A";
+
+  char buffer[256];
+  serializeJson(doc, buffer);
+  mqttClient.publish(mqtt_topic_status, buffer);
+  Serial.print("Published status: ");
+  Serial.println(buffer);
 }
 
 void loop() {
-  // Listen for incoming clients
-  TinyGsmClient client = server.available();
-
-  if (client) {
-    String currentLine = "";
-    while (client.connected()) {
-      if (client.available()) {
-        char c = client.read();
-        if (c == '\n') {
-          if (currentLine.length() == 0) {
-            // Request is complete, we can process it
-            // Simple request parsing
-            if (request.startsWith("GET /status")) {
-              handleStatus(client);
-            } else if (request.startsWith("POST /control")) {
-              // Read body
-              String body = "";
-              while(client.available()) {
-                body += (char)client.read();
-              }
-              handleControl(client, body);
-            } else {
-              sendHttpError(client, 404, "Not Found");
-            }
-            break;
-          } else {
-            if (currentLine.startsWith("GET") || currentLine.startsWith("POST")) {
-              request = currentLine;
-            }
-            currentLine = "";
-          }
-        } else if (c != '\r') {
-          currentLine += c;
-        }
-      }
-    }
-    // Close the connection
-    client.stop();
+  if (!mqttClient.connected()) {
+    mqtt_reconnect();
   }
-}
+  mqttClient.loop();
 
-
-void handleStatus(TinyGsmClient& client) {
-  uint8_t result;
-  String response = "{";
-
-  result = node.readHoldingRegisters(REG_OUTPUT_FREQ, 1);
-  response += "\"frequency\": " + (result == node.ku8MBSuccess ? String(node.getResponseBuffer(0) / 100.0, 2) : "null");
-  
-  result = node.readHoldingRegisters(REG_OUTPUT_CURRENT, 1);
-  response += ", \"current\": " + (result == node.ku8MBSuccess ? String(node.getResponseBuffer(0) / 100.0, 2) : "null");
-
-  result = node.readHoldingRegisters(REG_OUTPUT_VOLTAGE, 1);
-  response += ", \"voltage\": " + (result == node.ku8MBSuccess ? String(node.getResponseBuffer(0) / 10.0, 1) : "null");
-  
-  result = node.readHoldingRegisters(REG_FAULT_HISTORY, 1);
-  response += ", \"fault\": " + (result == node.ku8MBSuccess ? String(node.getResponseBuffer(0)) : "null");
-  
-  response += "}";
-  
-  sendHttpResponse(client, "200 OK", "application/json", response);
-}
-
-void handleControl(TinyGsmClient& client, String body) {
-  String command = "";
-  float frequency = 0.0;
-  
-  if (body.indexOf("\"command\": \"start\"") != -1) {
-    command = "start";
-  } else if (body.indexOf("\"command\": \"stop\"") != -1) {
-    command = "stop";
-  } else if (body.indexOf("\"command\": \"set_frequency\"") != -1) {
-    command = "set_frequency";
-    int freqIndex = body.indexOf("\"frequency\":");
-    if (freqIndex != -1) {
-      frequency = body.substring(freqIndex + 12).toFloat();
-    }
+  unsigned long now = millis();
+  if (now - lastStatusPublish > statusPublishInterval) {
+    lastStatusPublish = now;
+    publishStatus();
   }
-
-  uint8_t result = node.ku8MBSlaverequestError;
-
-  if (command == "start") {
-    result = node.writeSingleRegister(REG_CONTROL, CMD_RUN_FORWARD);
-  } else if (command == "stop") {
-    result = node.writeSingleRegister(REG_CONTROL, CMD_STOP);
-  } else if (command == "set_frequency" && frequency > 0) {
-    result = node.writeSingleRegister(REG_SET_FREQUENCY, (uint16_t)(frequency * 100));
-  }
-
-  if (result == node.ku8MBSuccess) {
-    sendHttpResponse(client, "200 OK", "application/json", "{\"status\": \"success\"}");
-  } else {
-    sendHttpError(client, 500, "{\"status\": \"error\", \"code\": " + String(result) + "}");
-  }
-}
-
-void sendHttpResponse(TinyGsmClient& client, String code, String contentType, String content) {
-  client.println("HTTP/1.1 " + code);
-  client.println("Content-Type: " + contentType);
-  client.println("Connection: close");
-  client.println("Content-Length: " + String(content.length()));
-  client.println();
-  client.println(content);
-}
-
-void sendHttpError(TinyGsmClient& client, int code, String message) {
-  String codeStr = "500 Internal Server Error";
-  if (code == 404) codeStr = "404 Not Found";
-  if (code == 400) codeStr = "400 Bad Request";
-  
-  sendHttpResponse(client, codeStr, "application/json", "{\"error\": \"" + message + "\"}");
 }

@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import mqtt from "mqtt";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -27,21 +28,119 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
+// --- MQTT Configuration ---
+const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL;
+const MQTT_USERNAME = import.meta.env.VITE_MQTT_USERNAME;
+const MQTT_PASSWORD = import.meta.env.VITE_MQTT_PASSWORD;
+const MQTT_TOPIC_CONTROL = "vfd/control";
+const MQTT_TOPIC_STATUS = "vfd/status";
+
 export default function Page() {
+  const [client, setClient] = useState<mqtt.MqttClient | null>(null);
   const [motorHertz, setMotorHertz] = useState(0);
 
+  // States for all dynamic data
+  const [motorStatus, setMotorStatus] = useState({
+    currentState: "Stopped",
+    frequency: 0,
+    rpm: 0,
+  });
+  const [telemetry, setTelemetry] = useState({
+    frequency: 0,
+    current: 0,
+    voltage: 0,
+    fault: "None",
+  });
+  const [connectivity, setConnectivity] = useState({
+    gsm: false,
+    esp32: false,
+    vfd: false,
+  });
+  const [lastCommandTimestamp, setLastCommandTimestamp] = useState(
+    new Date().toISOString()
+  );
+
+  useEffect(() => {
+    const mqttClient = mqtt.connect(MQTT_BROKER_URL, {
+      username: MQTT_USERNAME,
+      password: MQTT_PASSWORD,
+    });
+    setClient(mqttClient);
+
+    mqttClient.on("connect", () => {
+      console.log("Connected to MQTT broker");
+      mqttClient.subscribe(MQTT_TOPIC_STATUS, (err) => {
+        if (err) {
+          console.error("Subscription error:", err);
+        }
+      });
+    });
+
+    mqttClient.on("message", (topic, message) => {
+      if (topic === MQTT_TOPIC_STATUS) {
+        try {
+          const data = JSON.parse(message.toString());
+          setMotorStatus({
+            currentState: data.motorState,
+            frequency: data.frequency,
+            rpm: data.rpm,
+          });
+          setTelemetry({
+            frequency: data.frequency,
+            current: data.current,
+            voltage: data.voltage,
+            fault: data.fault || "None",
+          });
+          setConnectivity({
+            gsm: true, // Assuming if we get a message, GSM is up
+            esp32: true, // ESP32 is online
+            vfd: data.vfd_responding,
+          });
+        } catch (e) {
+          console.error("Failed to parse status message", e);
+        }
+      }
+    });
+
+    // Cleanup on unmount
+    return () => {
+      if (mqttClient) {
+        mqttClient.end();
+      }
+    };
+  }, []);
+
+  const publishCommand = (command: object) => {
+    if (client) {
+      client.publish(MQTT_TOPIC_CONTROL, JSON.stringify(command), (err) => {
+        if (err) {
+          console.error("Publish error:", err);
+        } else {
+          setLastCommandTimestamp(new Date().toISOString());
+        }
+      });
+    }
+  };
+
+  const handleStart = () => publishCommand({ command: "start" });
+  const handleStop = () => publishCommand({ command: "stop" });
+  const handleEmergencyStop = () =>
+    publishCommand({ command: "emergency_stop" });
+
   const handleSliderChange = (value: number[]) => {
-    setMotorHertz(value[0]);
+    const newHertz = value[0];
+    setMotorHertz(newHertz);
+    publishCommand({ command: "set_frequency", frequency: newHertz });
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     let value = parseFloat(event.target.value);
     if (isNaN(value)) {
-      value = 0; // Default to 0 if input is not a valid number
+      value = 0;
     }
-    // Clamp value between 0 and 60
     value = Math.max(0, Math.min(60, value));
     setMotorHertz(value);
+    publishCommand({ command: "set_frequency", frequency: value });
   };
 
   return (
@@ -66,6 +165,7 @@ export default function Page() {
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
           <div className="grid h-full grid-cols-1 grid-rows-2 gap-4 lg:grid-cols-2">
+            {/* Motor Control Card */}
             <Card className="h-full">
               <CardHeader>
                 <CardTitle>Motor Control</CardTitle>
@@ -75,8 +175,14 @@ export default function Page() {
               </CardHeader>
               <CardContent className="flex flex-col h-full justify-between gap-4">
                 <div className="flex gap-2">
-                  <Button className="flex-1">Start</Button>
-                  <Button variant="destructive" className="flex-1">
+                  <Button className="flex-1" onClick={handleStart}>
+                    Start
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={handleStop}
+                  >
                     Stop
                   </Button>
                 </div>
@@ -118,6 +224,8 @@ export default function Page() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Motor Status Card */}
             <Card className="h-full">
               <CardHeader>
                 <CardTitle>Motor Status</CardTitle>
@@ -129,27 +237,43 @@ export default function Page() {
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Current State</span>
-                    <Status variant="info">
+                    <Status
+                      variant={
+                        motorStatus.currentState === "Running"
+                          ? "info"
+                          : "default"
+                      }
+                    >
                       <StatusIndicator />
-                      <StatusLabel>Running</StatusLabel>
+                      <StatusLabel>{motorStatus.currentState}</StatusLabel>
                     </Status>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Frequency</span>
-                    <span className="text-lg font-bold">50.00 Hz</span>
+                    <span className="text-lg font-bold">
+                      {motorStatus.frequency.toFixed(2)} Hz
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="font-medium">RPM</span>
-                    <span className="text-lg font-bold">1450 RPM</span>
+                    <span className="text-lg font-bold">
+                      {motorStatus.rpm} RPM
+                    </span>
                   </div>
                 </div>
                 <div>
-                  <Button variant="destructive" className="w-full text-lg h-12">
+                  <Button
+                    variant="destructive"
+                    className="w-full text-lg h-12"
+                    onClick={handleEmergencyStop}
+                  >
                     EMERGENCY STOP
                   </Button>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Telemetry Panel Card */}
             <Card className="h-full">
               <CardHeader>
                 <CardTitle>Telemetry Panel</CardTitle>
@@ -163,29 +287,45 @@ export default function Page() {
                     <div className="text-sm font-medium text-muted-foreground">
                       Frequency
                     </div>
-                    <div className="text-lg font-bold">50.00 Hz</div>
+                    <div className="text-lg font-bold">
+                      {telemetry.frequency.toFixed(2)} Hz
+                    </div>
                   </div>
                   <div>
                     <div className="text-sm font-medium text-muted-foreground">
                       Current
                     </div>
-                    <div className="text-lg font-bold">10.50 A</div>
+                    <div className="text-lg font-bold">
+                      {telemetry.current.toFixed(2)} A
+                    </div>
                   </div>
                   <div>
                     <div className="text-sm font-medium text-muted-foreground">
                       Voltage
                     </div>
-                    <div className="text-lg font-bold">230.0 V</div>
+                    <div className="text-lg font-bold">
+                      {telemetry.voltage.toFixed(1)} V
+                    </div>
                   </div>
                   <div>
                     <div className="text-sm font-medium text-muted-foreground">
                       Fault
                     </div>
-                    <div className="text-lg font-bold text-green-500">None</div>
+                    <div
+                      className={`text-lg font-bold ${
+                        telemetry.fault === "None"
+                          ? "text-green-500"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {telemetry.fault}
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Connectivity Status Card */}
             <Card className="h-full">
               <CardHeader>
                 <CardTitle>Connectivity Status</CardTitle>
@@ -196,41 +336,33 @@ export default function Page() {
               <CardContent className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <span>GSM</span>
-                  <Badge
-                    variant="secondary"
-                    className="bg-green-500 text-white dark:bg-green-600"
-                  >
-                    Connected
+                  <Badge variant={connectivity.gsm ? "success" : "destructive"}>
+                    {connectivity.gsm ? "Connected" : "No Signal"}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>ESP32</span>
                   <Badge
-                    variant="secondary"
-                    className="bg-green-500 text-white dark:bg-green-600"
+                    variant={connectivity.esp32 ? "success" : "destructive"}
                   >
-                    Online
+                    {connectivity.esp32 ? "Online" : "Offline"}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>VFD</span>
-                  <Badge
-                    variant="secondary"
-                    className="bg-green-500 text-white dark:bg-green-600"
-                  >
-                    Responding
+                  <Badge variant={connectivity.vfd ? "success" : "destructive"}>
+                    {connectivity.vfd ? "Responding" : "No Response"}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Last Command</span>
                   <span className="text-sm text-muted-foreground">
-                    2026-01-05 10:30:00
+                    {new Date(lastCommandTimestamp).toLocaleTimeString()}
                   </span>
                 </div>
               </CardContent>
             </Card>
           </div>
-          {/* <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" /> */}
         </div>
       </SidebarInset>
     </SidebarProvider>

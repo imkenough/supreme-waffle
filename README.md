@@ -1,73 +1,46 @@
-# React + TypeScript + Vite
+# VFD Control Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project is a web-based dashboard to control and monitor a Mitsubishi FR-E700 VFD (Variable Frequency Drive) remotely. It consists of a React frontend and an ESP32 firmware that communicates with the VFD via Modbus RTU.
 
-Currently, two official plugins are available:
+## Architecture
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+-   **Frontend:** A React application built with Vite, using TailwindCSS and shadcn/ui for styling.
+-   **Backend/Device:** An ESP32 microcontroller running custom firmware.
+-   **Communication:**
+    -   The ESP32 connects to the internet via a SIM800C GPRS module.
+    -   The ESP32 communicates with the VFD using Modbus RTU over an RS-485 interface (MAX485 module).
+    -   The frontend and the ESP32 communicate in real-time using an **MQTT Broker** (e.g., HiveMQ Cloud).
 
-## React Compiler
+## Setup & Configuration
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 1. Frontend (React App)
 
-## Expanding the ESLint configuration
+The frontend is configured using environment variables.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1.  **Create a `.env` file** in the root of the project.
+2.  Copy the contents from `.env.example` into your new `.env` file.
+3.  **Fill in the values:**
+    -   `VITE_MQTT_BROKER_URL`: Your full TLS WebSocket URL from HiveMQ Cloud (e.g., `wss://your-cluster-url.s1.eu.hivemq.cloud:8884/mqtt`).
+    -   `VITE_MQTT_USERNAME`: Your HiveMQ username.
+    -   `VITE_MQTT_PASSWORD`: Your HiveMQ password.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 2. Device (ESP32 Firmware)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+The ESP32 firmware is configured using a `config.h` header file.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1.  **Create a `config.h` file** in the same directory as `esp32_vfd_controller.ino`.
+2.  Copy the contents from `config.h.example` into your new `config.h` file.
+3.  **Fill in the values:**
+    -   `GPRS_APN`: Your mobile carrier's Access Point Name for GPRS.
+    -   `MQTT_BROKER`: Your HiveMQ Cluster URL (e.g., `your-cluster-url.s1.eu.hivemq.cloud`). **Do not include the port or `wss://`**.
+    -   `MQTT_PORT`: The standard TCP port for your MQTT broker (usually `1883` for non-TLS or `8883` for TLS).
+    -   `MQTT_USERNAME`: Your HiveMQ username.
+    -   `MQTT_PASSWORD`: Your HiveMQ password.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 3. VFD Parameters
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Ensure your Mitsubishi FR-E700 VFD is configured for Modbus RTU communication as per the settings in `esp32_vfd_controller.ino` and the `espcondigdocs.pdf`.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Deployment
+
+Follow the instructions in `DEPLOYMENT_INSTRUCTIONS.md` to deploy the frontend to Vercel and flash the firmware to your ESP32.
