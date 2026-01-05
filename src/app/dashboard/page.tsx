@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar";
+import React, { useState } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -19,6 +20,22 @@ import {
 } from "@/components/ui/sidebar";
 
 export default function Page() {
+  const [motorHertz, setMotorHertz] = useState(0);
+
+  const handleSliderChange = (value: number[]) => {
+    setMotorHertz(value[0]);
+  };
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    let value = parseFloat(event.target.value);
+    if (isNaN(value)) {
+      value = 0; // Default to 0 if input is not a valid number
+    }
+    // Clamp value between 0 and 60
+    value = Math.max(0, Math.min(60, value));
+    setMotorHertz(value);
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -68,15 +85,17 @@ export default function Page() {
                     type="number"
                     min="0"
                     max="60"
-                    defaultValue="0"
+                    value={motorHertz.toFixed(2)}
+                    onChange={handleInputChange}
                     className="mt-1"
                   />
                   <Slider
                     id="motor-hertz-slider"
                     min={0}
                     max={60}
-                    step={1}
-                    defaultValue={[0]}
+                    step={0.01}
+                    value={[motorHertz]}
+                    onValueChange={handleSliderChange}
                     className="mt-2"
                   />
                 </div>
