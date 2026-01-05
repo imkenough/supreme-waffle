@@ -4,10 +4,8 @@ import mqtt from "mqtt";
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -65,9 +63,8 @@ export default function Page() {
       username: MQTT_USERNAME,
       password: MQTT_PASSWORD,
     });
-    setClient(mqttClient);
-
     mqttClient.on("connect", () => {
+      setClient(mqttClient);
       console.log("Connected to MQTT broker");
       mqttClient.subscribe(MQTT_TOPIC_STATUS, (err) => {
         if (err) {
