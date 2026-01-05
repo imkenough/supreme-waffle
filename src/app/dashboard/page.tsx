@@ -8,6 +8,10 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   SidebarInset,
   SidebarProvider,
@@ -43,11 +47,52 @@ export default function Page() {
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
           <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
+            <Card>
+              <CardHeader>
+                <CardTitle>Motor Control</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <Button>Start</Button>
+                  <Button variant="destructive">Stop</Button>
+                </div>
+                <div className="mt-4">
+                  <label
+                    htmlFor="motor-hertz"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Motor Hertz (0-60Hz)
+                  </label>
+                  <Input
+                    id="motor-hertz"
+                    type="number"
+                    min="0"
+                    max="60"
+                    defaultValue="0"
+                    className="mt-1"
+                  />
+                  <Slider
+                    id="motor-hertz-slider"
+                    min={0}
+                    max={60}
+                    step={1}
+                    defaultValue={[0]}
+                    className="mt-2"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <div className="p-4">Card Content 2</div>
+            </Card>
+            <Card>
+              <div className="p-4">Card Content 3</div>
+            </Card>
+            <Card>
+              <div className="p-4">Card Content 4</div>
+            </Card>
           </div>
-          <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
+          {/* <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" /> */}
         </div>
       </SidebarInset>
     </SidebarProvider>
