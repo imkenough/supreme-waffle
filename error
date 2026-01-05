@@ -1,20 +1,3 @@
-16:41:39.543 Running build in Washington, D.C., USA (East) – iad1
-16:41:39.544 Build machine configuration: 2 cores, 8 GB
-16:41:39.702 Cloning github.com/espmod800485/supreme-waffle (Branch: main, Commit: 6c2b371)
-16:41:39.703 Previous build caches not available.
-16:41:40.015 Cloning completed: 313.000ms
-16:41:40.391 Running "vercel build"
-16:41:41.011 Vercel CLI 50.1.3
-16:41:41.546 Installing dependencies...
-16:41:47.994 
-16:41:47.995 added 328 packages in 6s
-16:41:47.996 
-16:41:47.997 59 packages are looking for funding
-16:41:47.997   run `npm fund` for details
-16:41:48.042 Running "npm run build"
-16:41:48.141 
-16:41:48.141 > vite1@0.0.0 build
-16:41:48.142 > tsc -b && vite build
-16:41:48.142 
-16:41:52.071 src/main.tsx(8,22): error TS2307: Cannot find module './app/logs/page.tsx' or its corresponding type declarations.
-16:41:52.478 Error: Command "npm run build" exited with 2
+404: NOT_FOUND
+Code: NOT_FOUND
+ID: bom1::7dsrn-1767613354854-2981b2e41bee
