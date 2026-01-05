@@ -77,7 +77,7 @@ export default function Page() {
                   Control the speed of the motor in Hertz.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex flex-col h-full justify-between">
                 <div className="flex gap-2">
                   <Button className="flex-1">Start</Button>
                   <Button variant="destructive" className="flex-1">
