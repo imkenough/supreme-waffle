@@ -20,6 +20,11 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Status,
+  StatusIndicator,
+  StatusLabel,
+} from "@/components/ui/status";
+import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
@@ -151,7 +156,35 @@ export default function Page() {
               </CardContent>
             </Card>
             <Card className="h-full">
-              <div className="p-4">Card Content 3</div>
+              <CardHeader>
+                <CardTitle>Connectivity Status</CardTitle>
+                <CardDescription>
+                  Monitor the status of connected devices.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                <div className="flex items-center justify-between">
+                  <span>GSM</span>
+                  <Status variant="success">
+                    <StatusIndicator />
+                    <StatusLabel>Connected</StatusLabel>
+                  </Status>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>ESP32</span>
+                  <Status variant="success">
+                    <StatusIndicator />
+                    <StatusLabel>Online</StatusLabel>
+                  </Status>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>VFD</span>
+                  <Status variant="success">
+                    <StatusIndicator />
+                    <StatusLabel>Responding</StatusLabel>
+                  </Status>
+                </div>
+              </CardContent>
             </Card>
             <Card className="h-full">
               <div className="p-4">Card Content 4</div>
