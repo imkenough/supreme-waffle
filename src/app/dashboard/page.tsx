@@ -9,7 +9,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,11 +73,16 @@ export default function Page() {
             <Card className="h-full">
               <CardHeader>
                 <CardTitle>Motor Control</CardTitle>
+                <CardDescription>
+                  Control the speed of the motor in Hertz.
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-2">
-                  <Button>Start</Button>
-                  <Button variant="destructive">Stop</Button>
+                <div className="flex gap-2">
+                  <Button className="flex-1">Start</Button>
+                  <Button variant="destructive" className="flex-1">
+                    Stop
+                  </Button>
                 </div>
                 <div className="mt-4">
                   <label
@@ -80,7 +91,7 @@ export default function Page() {
                   >
                     Motor Hertz (0-60Hz)
                   </label>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2 mt-1 py-2">
                     <Input
                       id="motor-hertz"
                       type="number"
@@ -102,7 +113,7 @@ export default function Page() {
                       onValueChange={handleSliderChange}
                       className="mt-2"
                     />
-                    <div className="flex justify-between text-sm mt-1 px-1">
+                    <div className="flex justify-between text-sm mt-1 px-1 text-muted-foreground">
                       <span>0Hz</span>
                       <span>30Hz</span>
                       <span>60Hz</span>
