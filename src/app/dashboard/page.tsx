@@ -79,21 +79,21 @@ export default function Page() {
                   Control the speed of the motor in Hertz.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col h-full justify-between">
+              <CardContent className="flex flex-col h-full justify-between gap-4">
                 <div className="flex gap-2">
                   <Button className="flex-1">Start</Button>
                   <Button variant="destructive" className="flex-1">
                     Stop
                   </Button>
                 </div>
-                <div className="mt-4">
+                <div>
                   <label
                     htmlFor="motor-hertz"
                     className="block text-sm font-medium text-muted-foreground"
                   >
                     Motor Hertz (0-60Hz)
                   </label>
-                  <div className="flex items-center gap-2 mt-1 py-2">
+                  <div className="flex items-center gap-2 mt-1">
                     <Input
                       id="motor-hertz"
                       type="number"
@@ -131,7 +131,7 @@ export default function Page() {
                   Monitor the operational status of the motor.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col h-full justify-between">
+              <CardContent className="flex flex-col h-full justify-between gap-4">
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Current State</span>
@@ -149,7 +149,7 @@ export default function Page() {
                     <span className="text-lg font-bold">1450 RPM</span>
                   </div>
                 </div>
-                <div className="mt-auto">
+                <div>
                   <Button variant="destructive" className="w-full text-lg h-12">
                     EMERGENCY STOP
                   </Button>
@@ -163,7 +163,7 @@ export default function Page() {
                   Monitor real-time system parameters.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col h-full justify-between">
+              <CardContent className="flex flex-col h-full justify-between gap-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-sm font-medium text-muted-foreground">
@@ -199,7 +199,7 @@ export default function Page() {
                   Monitor the status of connected devices.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-4">
+              <CardContent className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <span>GSM</span>
                   <Badge
