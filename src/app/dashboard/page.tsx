@@ -87,7 +87,7 @@ export default function Page() {
                 <div className="mt-4">
                   <label
                     htmlFor="motor-hertz"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-muted-foreground"
                   >
                     Motor Hertz (0-60Hz)
                   </label>
@@ -101,7 +101,7 @@ export default function Page() {
                       onChange={handleInputChange}
                       className="flex-1"
                     />
-                    <span className="ml-auto">Hz</span>
+                    <span className="ml-auto text-muted-foreground">Hz</span>
                   </div>
                   <div className="relative mt-2">
                     <Slider
@@ -123,7 +123,32 @@ export default function Page() {
               </CardContent>
             </Card>
             <Card className="h-full">
-              <div className="p-4">Card Content 2</div>
+              <CardHeader>
+                <CardTitle>Telemetry Panel</CardTitle>
+                <CardDescription>
+                  Monitor real-time system parameters.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col h-full justify-between">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-700">Frequency</div>
+                    <div className="text-lg font-bold">50.00 Hz</div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-700">Current</div>
+                    <div className="text-lg font-bold">10.50 A</div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-700">Voltage</div>
+                    <div className="text-lg font-bold">230.0 V</div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-700">Fault</div>
+                    <div className="text-lg font-bold text-green-500">None</div>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
             <Card className="h-full">
               <div className="p-4">Card Content 3</div>
