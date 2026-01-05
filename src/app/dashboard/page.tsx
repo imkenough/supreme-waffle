@@ -20,6 +20,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Status, StatusIndicator, StatusLabel } from "@/components/ui/status";
+import { Badge } from "@/components/ui/badge";
 import {
   SidebarInset,
   SidebarProvider,
@@ -125,6 +126,38 @@ export default function Page() {
             </Card>
             <Card className="h-full">
               <CardHeader>
+                <CardTitle>Motor Status</CardTitle>
+                <CardDescription>
+                  Monitor the operational status of the motor.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col h-full justify-between">
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Current State</span>
+                    <Status variant="info">
+                      <StatusIndicator />
+                      <StatusLabel>Running</StatusLabel>
+                    </Status>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Frequency</span>
+                    <span className="text-lg font-bold">50.00 Hz</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">RPM</span>
+                    <span className="text-lg font-bold">1450 RPM</span>
+                  </div>
+                </div>
+                <div className="mt-auto">
+                  <Button variant="destructive" className="w-full text-lg h-12">
+                    EMERGENCY STOP
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="h-full">
+              <CardHeader>
                 <CardTitle>Telemetry Panel</CardTitle>
                 <CardDescription>
                   Monitor real-time system parameters.
@@ -169,24 +202,30 @@ export default function Page() {
               <CardContent className="grid gap-4">
                 <div className="flex items-center justify-between">
                   <span>GSM</span>
-                  <Status variant="success">
-                    <StatusIndicator />
-                    <StatusLabel>Connected</StatusLabel>
-                  </Status>
+                  <Badge
+                    variant="secondary"
+                    className="bg-green-500 text-white dark:bg-green-600"
+                  >
+                    Connected
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>ESP32</span>
-                  <Status variant="success">
-                    <StatusIndicator />
-                    <StatusLabel>Online</StatusLabel>
-                  </Status>
+                  <Badge
+                    variant="secondary"
+                    className="bg-green-500 text-white dark:bg-green-600"
+                  >
+                    Online
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>VFD</span>
-                  <Status variant="success">
-                    <StatusIndicator />
-                    <StatusLabel>Responding</StatusLabel>
-                  </Status>
+                  <Badge
+                    variant="secondary"
+                    className="bg-green-500 text-white dark:bg-green-600"
+                  >
+                    Responding
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Last Command</span>
@@ -195,9 +234,6 @@ export default function Page() {
                   </span>
                 </div>
               </CardContent>
-            </Card>
-            <Card className="h-full">
-              <div className="p-4">Card Content 4</div>
             </Card>
           </div>
           {/* <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" /> */}
