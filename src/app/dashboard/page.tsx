@@ -26,13 +26,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-// --- MQTT Configuration ---
-const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL;
-const MQTT_USERNAME = import.meta.env.VITE_MQTT_USERNAME;
-const MQTT_PASSWORD = import.meta.env.VITE_MQTT_PASSWORD;
-const MQTT_TOPIC_CONTROL = "vfd/control";
-const MQTT_TOPIC_STATUS = "vfd/status";
-
 function ErrorDisplay({ message }: { message: string }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-4">
