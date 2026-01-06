@@ -200,7 +200,7 @@ void publishStatus() {
   doc["vfd_responding"] = (result == node.ku8MBSuccess);
 
   // You need to implement logic to calculate RPM based on frequency and motor poles
-  doc["rpm"] = (doc["frequency"] > 0) ? (int)((doc["frequency"].as<float>() / 60.0) * 3600 / 2) : 0; // Example for 2-pole motor
+  doc["rpm"] = (doc["frequency"] > 0) ? (int)(doc["frequency"].as<float>() * 60) : 0; // RPM = (Hz * 120) / poles. For 2-pole motor, RPM = Hz * 60.
 
   result = node.readHoldingRegisters(REG_FAULT_HISTORY, 1);
   doc["fault"] = (result == node.ku8MBSuccess) ? String(node.getResponseBuffer(0)) : "N/A";
