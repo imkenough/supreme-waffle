@@ -133,15 +133,25 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   deserializeJson(doc, message);
 
   const char* command = doc["command"];
+  uint8_t result;
 
   if (strcmp(command, "start") == 0) {
-    node.writeSingleRegister(REG_CONTROL, CMD_RUN_FORWARD);
+    result = node.writeSingleRegister(REG_CONTROL, CMD_RUN_FORWARD);
+    if (result != node.ku8MBSuccess) {
+      Serial.println("ERROR: Failed to send start command to VFD");
+    }
   } else if (strcmp(command, "stop") == 0 || strcmp(command, "emergency_stop") == 0) {
-    node.writeSingleRegister(REG_CONTROL, CMD_STOP);
+    result = node.writeSingleRegister(REG_CONTROL, CMD_STOP);
+    if (result != node.ku8MBSuccess) {
+      Serial.println("ERROR: Failed to send stop command to VFD");
+    }
   } else if (strcmp(command, "set_frequency") == 0) {
     float frequency = doc["frequency"];
     if (frequency >= 0 && frequency <= 60) {
-      node.writeSingleRegister(REG_SET_FREQUENCY, (uint16_t)(frequency * 100));
+      result = node.writeSingleRegister(REG_SET_FREQUENCY, (uint16_t)(frequency * 100));
+      if (result != node.ku8MBSuccess) {
+        Serial.println("ERROR: Failed to send set_frequency command to VFD");
+      }
     }
   }
 }
