@@ -33,7 +33,53 @@ const MQTT_PASSWORD = import.meta.env.VITE_MQTT_PASSWORD;
 const MQTT_TOPIC_CONTROL = "vfd/control";
 const MQTT_TOPIC_STATUS = "vfd/status";
 
+function ErrorDisplay({ message }: { message: string }) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-red-500">Configuration Error</CardTitle>
+          <CardDescription>
+            The dashboard cannot start due to missing environment variables.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{message}</p>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Please ensure all required `VITE_MQTT_*` environment variables are
+            set in your `.env` file.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function Page() {
+  // --- MQTT Configuration ---
+  const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL;
+  const MQTT_USERNAME = import.meta.env.VITE_MQTT_USERNAME;
+  const MQTT_PASSWORD = import.meta.env.VITE_MQTT_PASSWORD;
+  const MQTT_TOPIC_CONTROL = "vfd/control";
+  const MQTT_TOPIC_STATUS = "vfd/status";
+
+  // Validate environment variables
+  if (!MQTT_BROKER_URL) {
+    return (
+      <ErrorDisplay message="Missing VITE_MQTT_BROKER_URL environment variable." />
+    );
+  }
+  if (!MQTT_USERNAME) {
+    return (
+      <ErrorDisplay message="Missing VITE_MQTT_USERNAME environment variable." />
+    );
+  }
+  if (!MQTT_PASSWORD) {
+    return (
+      <ErrorDisplay message="Missing VITE_MQTT_PASSWORD environment variable." />
+    );
+  }
+
   const [client, setClient] = useState<mqtt.MqttClient | null>(null);
   const [motorHertz, setMotorHertz] = useState(0);
 
