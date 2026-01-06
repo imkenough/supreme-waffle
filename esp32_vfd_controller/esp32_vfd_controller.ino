@@ -89,6 +89,8 @@ ModbusMaster node;
 unsigned long lastStatusPublish = 0;
 const long statusPublishInterval = 5000; // Publish status every 5 seconds
 
+void publishStatus(); // Forward declaration for use in mqtt_callback
+
 void preTransmission() {
   digitalWrite(MAX485_DE_RE_PIN, HIGH);
 }
@@ -154,6 +156,11 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
       }
     }
   }
+
+  // Publish status immediately after a command for faster feedback
+  delay(100); // Give VFD a moment to process command
+  publishStatus();
+  lastStatusPublish = millis(); // Reset status publish timer
 }
 
 void mqtt_reconnect() {
