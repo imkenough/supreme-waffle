@@ -72,6 +72,9 @@ const char* mqtt_topic_status = "vfd/status";
 #define CMD_STOP            0
 #define CMD_RUN_FORWARD     2
 
+// Define the GSM modem model you are using
+#define TINY_GSM_MODEM_SIM800
+
 #include <TinyGsmClient.h>
 #include <PubSubClient.h>
 #include <ModbusMaster.h>

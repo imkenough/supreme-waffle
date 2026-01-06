@@ -1,3 +1,11 @@
-404: NOT_FOUND
-Code: NOT_FOUND
-ID: bom1::7dsrn-1767613354854-2981b2e41bee
+In file included from C:\Users\hanee\Desktop\espcode\esp32_vfd_controller\esp32_vfd_controller.ino:75:
+c:\Users\hanee\Documents\Arduino\libraries\TinyGSM\src/TinyGsmClient.h:132:2: error: #error "Please define GSM modem model"
+  132 | #error "Please define GSM modem model"
+      |  ^~~~~
+C:\Users\hanee\Desktop\espcode\esp32_vfd_controller\esp32_vfd_controller.ino:76:10: fatal error: PubSubClient.h: No such file or directory
+   76 | #include <PubSubClient.h>
+      |          ^~~~~~~~~~~~~~~~
+compilation terminated.
+exit status 1
+
+Compilation error: PubSubClient.h: No such file or directory
