@@ -193,21 +193,26 @@ void setup() {
 void publishStatus() {
   StaticJsonDocument<256> doc;
   uint8_t result;
+  const int modbus_delay = 50; // Delay in ms between Modbus reads
 
   // Read data from VFD
   result = node.readHoldingRegisters(REG_OUTPUT_FREQ, 1);
   doc["frequency"] = (result == node.ku8MBSuccess) ? node.getResponseBuffer(0) / 100.0 : 0;
+  delay(modbus_delay);
   
   result = node.readHoldingRegisters(REG_OUTPUT_CURRENT, 1);
   doc["current"] = (result == node.ku8MBSuccess) ? node.getResponseBuffer(0) / 100.0 : 0;
+  delay(modbus_delay);
   
   result = node.readHoldingRegisters(REG_OUTPUT_VOLTAGE, 1);
   doc["voltage"] = (result == node.ku8MBSuccess) ? node.getResponseBuffer(0) / 10.0 : 0;
+  delay(modbus_delay);
 
   result = node.readHoldingRegisters(REG_MOTOR_STATUS, 1);
   doc["motorState"] = (result == node.ku8MBSuccess && node.getResponseBuffer(0) != 0) ? "Running" : "Stopped";
   
   doc["vfd_responding"] = (result == node.ku8MBSuccess);
+  delay(modbus_delay);
 
   // You need to implement logic to calculate RPM based on frequency and motor poles
   doc["rpm"] = (doc["frequency"] > 0) ? (int)(doc["frequency"].as<float>() * 60) : 0; // RPM = (Hz * 120) / poles. For 2-pole motor, RPM = Hz * 60.
