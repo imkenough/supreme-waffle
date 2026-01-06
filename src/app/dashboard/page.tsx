@@ -73,6 +73,23 @@ export default function Page() {
       });
     });
 
+    mqttClient.on("reconnect", () => {
+      console.log("Reconnecting to MQTT broker...");
+      // Set a generic disconnected state on reconnect attempt
+      setConnectivity({ gsm: false, esp32: false, vfd: false });
+    });
+
+    mqttClient.on("offline", () => {
+      console.log("MQTT client offline");
+      setConnectivity({ gsm: false, esp32: false, vfd: false });
+    });
+
+    mqttClient.on("error", (err) => {
+      console.error("MQTT client error:", err);
+      // Also reset connectivity on error
+      setConnectivity({ gsm: false, esp32: false, vfd: false });
+    });
+
     mqttClient.on("message", (topic, message) => {
       if (topic === MQTT_TOPIC_STATUS) {
         try {
