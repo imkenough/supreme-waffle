@@ -125,9 +125,11 @@ export default function Page() {
     publishCommand({ command: "emergency_stop" });
 
   const handleSliderChange = (value: number[]) => {
-    const newHertz = value[0];
-    setMotorHertz(newHertz);
-    publishCommand({ command: "set_frequency", frequency: newHertz });
+    setMotorHertz(value[0]);
+  };
+
+  const handleSliderCommit = (value: number[]) => {
+    publishCommand({ command: "set_frequency", frequency: value[0] });
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -210,6 +212,7 @@ export default function Page() {
                       step={0.01}
                       value={[motorHertz]}
                       onValueChange={handleSliderChange}
+                      onValueCommit={handleSliderCommit}
                       className="mt-2"
                     />
                     <div className="flex justify-between text-sm mt-1 px-1 text-muted-foreground">
