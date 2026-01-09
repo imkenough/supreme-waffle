@@ -51,6 +51,7 @@ const char* mqtt_username = MQTT_USERNAME;
 const char* mqtt_password = MQTT_PASSWORD;
 const char* mqtt_topic_control = "vfd/control";
 const char* mqtt_topic_status = "vfd/status";
+const char* mqtt_topic_logs = MQTT_TOPIC_LOGS;
 
 // Define the serial port for the SIM800C
 #define SerialAT Serial2
@@ -107,30 +108,38 @@ void postTransmission() {
   digitalWrite(MAX485_DE_RE_PIN, LOW);
 }
 
+// Publishes a message to both Serial and the MQTT logs topic
+void publishLog(const String& message) {
+  Serial.println(message);
+  if (mqttClient.connected()) {
+    mqttClient.publish(mqtt_topic_logs, message.c_str());
+  }
+}
+
 bool setup_gprs() {
-  Serial.println("Initializing modem...");
+  publishLog("Initializing modem...");
   SerialAT.begin(115200, SERIAL_8N1, 16, 17);
   delay(6000);
   modem.restart();
 
-  Serial.println("Waiting for network...");
+  publishLog("Waiting for network...");
   if (!modem.waitForNetwork()) {
-    Serial.println("GPRS: failed to connect to network.");
+    publishLog("GPRS: failed to connect to network.");
     return false;
   }
 
-  Serial.println("Connecting to GPRS...");
+  publishLog("Connecting to GPRS...");
   if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
-    Serial.println("GPRS: failed to connect to GPRS.");
+    publishLog("GPRS: failed to connect to GPRS.");
     return false;
   }
-  Serial.println("GPRS connected");
+  publishLog("GPRS connected");
   return true;
 }
 
 bool setup_wifi() {
   wifiClient.setInsecure(); // For debugging: bypass SSL certificate validation
-  Serial.println("Connecting to WiFi...");
+  publishLog("Connecting to WiFi...");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   int max_attempts = 20;  // Try for about 10 seconds (20 * 500ms)
@@ -139,47 +148,44 @@ bool setup_wifi() {
     Serial.print(".");
     max_attempts--;
   }
+  Serial.println(); // Add a newline for the local serial monitor
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("");
-    Serial.print("WiFi connected, IP address: ");
-    Serial.println(WiFi.localIP());
+    String ipMessage = "WiFi connected, IP address: " + WiFi.localIP().toString();
+    publishLog(ipMessage);
     return true;
   } else {
-    Serial.println("");
-    Serial.println("WiFi connection failed.");
+    publishLog("WiFi connection failed.");
     return false;
   }
 }
 
 void setup_network() {
-  Serial.println("Attempting GPRS connection...");
+  publishLog("Attempting GPRS connection...");
   if (setup_gprs()) {
     activeClient = &gsmClient;
-    Serial.println("Network connected via GPRS.");
+    publishLog("Network connected via GPRS.");
     return;
   }
-  Serial.println("GPRS failed, attempting WiFi connection...");
+  publishLog("GPRS failed, attempting WiFi connection...");
   if (setup_wifi()) {
     activeClient = &wifiClient;
-    Serial.println("Network connected via WiFi.");
+    publishLog("Network connected via WiFi.");
     return;
   }
 
-  Serial.println("All network connections failed, restarting ESP...");
+  publishLog("All network connections failed, restarting ESP...");
   delay(5000);
   ESP.restart();
 }
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-
   char message[length + 1];
   memcpy(message, payload, length);
   message[length] = '\0';
-  Serial.println(message);
+
+  String logMessage = "MQTT message arrived [" + String(topic) + "] " + String(message);
+  publishLog(logMessage);
 
   StaticJsonDocument<200> doc;
   deserializeJson(doc, message);
@@ -190,19 +196,19 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   if (strcmp(command, "start") == 0) {
     result = node.writeSingleRegister(REG_CONTROL, CMD_RUN_FORWARD);
     if (result != node.ku8MBSuccess) {
-      Serial.println("ERROR: Failed to send start command to VFD");
+      publishLog("ERROR: Failed to send start command to VFD");
     }
   } else if (strcmp(command, "stop") == 0 || strcmp(command, "emergency_stop") == 0) {
     result = node.writeSingleRegister(REG_CONTROL, CMD_STOP);
     if (result != node.ku8MBSuccess) {
-      Serial.println("ERROR: Failed to send stop command to VFD");
+      publishLog("ERROR: Failed to send stop command to VFD");
     }
   } else if (strcmp(command, "set_frequency") == 0) {
     float frequency = doc["frequency"];
     if (frequency >= 0 && frequency <= 60) {
       result = node.writeSingleRegister(REG_SET_FREQUENCY, (uint16_t)(frequency * 100));
       if (result != node.ku8MBSuccess) {
-        Serial.println("ERROR: Failed to send set_frequency command to VFD");
+        publishLog("ERROR: Failed to send set_frequency command to VFD");
       }
     }
   }
@@ -224,7 +230,7 @@ void mqtt_reconnect() {
 
   // If network is not connected, try to re-establish it
   if (!network_connected) {
-    Serial.println("Underlying network lost. Re-establishing...");
+    publishLog("Underlying network lost. Re-establishing...");
     setup_network();  // This will either reconnect or restart ESP
     // If ESP restarts, this function call terminates.
     // If it reconnects, activeClient might have changed (e.g. GPRS->WiFi), so reset mqttClient.
@@ -233,21 +239,19 @@ void mqtt_reconnect() {
 
   // Now attempt MQTT connection
   while (!mqttClient.connected()) {
-    Serial.print("Attempting MQTT connection...");
+    publishLog("Attempting MQTT connection...");
     String clientId = "esp32-vfd-client-";
     clientId += String(random(0xffff), HEX);
     if (mqttClient.connect(clientId.c_str(), mqtt_username, mqtt_password)) {
-      Serial.println("connected");
+      publishLog("MQTT connected");
       mqttClient.subscribe(mqtt_topic_control);
     } else {
-      Serial.print("failed, rc=");
-      Serial.print(mqttClient.state());
-      Serial.println(" try again in 5 seconds");
+      String logMsg = "MQTT connection failed, rc=" + String(mqttClient.state()) + ". Retrying in 5 seconds...";
+      publishLog(logMsg);
       delay(5000);
     }
   }
 }
-
 void setup() {
   Serial.begin(115200);
   pinMode(MAX485_DE_RE_PIN, OUTPUT);
