@@ -1,7 +1,7 @@
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import mqtt from "mqtt";
 import {
   Breadcrumb,
@@ -57,9 +57,8 @@ function ErrorDisplay({ message }: { message: string }) {
   );
 }
 
-
 export default function Page() {
-    // Validate environment variables first
+  // Validate environment variables first
   if (!import.meta.env.VITE_MQTT_BROKER_URL) {
     return (
       <ErrorDisplay message="Missing VITE_MQTT_BROKER_URL environment variable." />
@@ -75,7 +74,6 @@ export default function Page() {
       <ErrorDisplay message="Missing VITE_MQTT_PASSWORD environment variable." />
     );
   }
-
 
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const logContainerRef = useRef<HTMLDivElement>(null);
@@ -111,13 +109,13 @@ export default function Page() {
     });
 
     mqttClient.on("offline", () => {
-        console.log("MQTT client for logs offline");
-        setIsConnected(false);
+      console.log("MQTT client for logs offline");
+      setIsConnected(false);
     });
 
     mqttClient.on("error", (err) => {
-        console.error("MQTT client error:", err);
-        setIsConnected(false);
+      console.error("MQTT client error:", err);
+      setIsConnected(false);
     });
 
     return () => {
@@ -158,8 +156,14 @@ export default function Page() {
           <div className="flex items-center justify-between">
             <h1 className="text-lg font-semibold md:text-2xl">Device Logs</h1>
             <div className="flex items-center gap-2">
-                <span className={`h-3 w-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                <span className="text-sm text-muted-foreground">{isConnected ? 'Connected' : 'Disconnected'}</span>
+              <span
+                className={`h-3 w-3 rounded-full ${
+                  isConnected ? "bg-green-500" : "bg-red-500"
+                }`}
+              ></span>
+              <span className="text-sm text-muted-foreground">
+                {isConnected ? "Connected" : "Disconnected"}
+              </span>
             </div>
           </div>
           <Card className="flex flex-col flex-1">
@@ -179,12 +183,16 @@ export default function Page() {
                     <span className="text-muted-foreground mr-4">
                       [{new Date(log.timestamp).toLocaleTimeString()}]
                     </span>
-                    <span className="flex-1 whitespace-pre-wrap">{log.message}</span>
+                    <span className="flex-1 whitespace-pre-wrap">
+                      {log.message}
+                    </span>
                   </div>
                 ))
               ) : (
                 <div className="flex h-full items-center justify-center text-muted-foreground">
-                  { isConnected ? "Waiting for logs..." : "Connecting to MQTT broker..." }
+                  {isConnected
+                    ? "Waiting for logs..."
+                    : "Connecting to MQTT broker..."}
                 </div>
               )}
             </CardContent>
