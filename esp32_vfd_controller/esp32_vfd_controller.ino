@@ -42,8 +42,8 @@
 
 // --- GPRS and MQTT Configuration ---
 const char apn[] = GPRS_APN;
-const char gprsUser[] = GPRS_USER;    
-const char gprsPass[] = GPRS_PASS;    
+const char gprsUser[] = GPRS_USER;
+const char gprsPass[] = GPRS_PASS;
 
 const char* mqtt_broker = MQTT_BROKER;
 const int mqtt_port = MQTT_PORT;
@@ -60,17 +60,17 @@ const char* mqtt_topic_status = "vfd/status";
 #define VFD_SLAVE_ID 1
 
 // Modbus registers (verify with manual)
-#define REG_CONTROL         8
-#define REG_SET_FREQUENCY   14
-#define REG_OUTPUT_FREQ     201
-#define REG_OUTPUT_CURRENT  202
-#define REG_OUTPUT_VOLTAGE  203
-#define REG_MOTOR_STATUS    200 // Example: may contain running status
-#define REG_FAULT_HISTORY   993
+#define REG_CONTROL 8
+#define REG_SET_FREQUENCY 14
+#define REG_OUTPUT_FREQ 201
+#define REG_OUTPUT_CURRENT 202
+#define REG_OUTPUT_VOLTAGE 203
+#define REG_MOTOR_STATUS 200  // Example: may contain running status
+#define REG_FAULT_HISTORY 993
 
 // Modbus commands
-#define CMD_STOP            0
-#define CMD_RUN_FORWARD     2
+#define CMD_STOP 0
+#define CMD_RUN_FORWARD 2
 
 // Define the GSM modem model you are using
 #define TINY_GSM_MODEM_SIM800
@@ -79,25 +79,25 @@ const char* mqtt_topic_status = "vfd/status";
 #include <PubSubClient.h>
 #include <ModbusMaster.h>
 #include <ArduinoJson.h>
-#include <WiFi.h> // Required for WiFiClient
+#include <WiFi.h>  // Required for WiFiClient
 #include <WiFiClientSecure.h>
-#include <ESP.h> // Required for ESP.restart()
+#include <ESP.h>  // Required for ESP.restart()
 
 // --- Globals ---
 TinyGsm modem(SerialAT);
 // Use secure clients for MQTTS (port 8883)
 TinyGsmClientSecure gsmClient(modem);
 WiFiClientSecure wifiClient;
-Client* activeClient = nullptr; // Pointer to the currently active network client, null until network is up
+Client* activeClient = nullptr;  // Pointer to the currently active network client, null until network is up
 
-PubSubClient mqttClient; // Initialize empty, will be configured in setup
+PubSubClient mqttClient;  // Initialize empty, will be configured in setup
 ModbusMaster node;
 
 unsigned long lastStatusPublish = 0;
-const long statusPublishInterval = 5000; // Publish status every 5 seconds
+const long statusPublishInterval = 5000;  // Publish status every 5 seconds
 
-void publishStatus(); // Forward declaration for use in mqtt_callback
-void setup_network(); // Forward declaration for use in setup() and mqtt_reconnect()
+void publishStatus();  // Forward declaration for use in mqtt_callback
+void setup_network();  // Forward declaration for use in setup() and mqtt_reconnect()
 
 void preTransmission() {
   digitalWrite(MAX485_DE_RE_PIN, HIGH);
@@ -108,7 +108,6 @@ void postTransmission() {
 }
 
 bool setup_gprs() {
-  gsmClient.setInsecure(); // For debugging: bypass SSL certificate validation
   Serial.println("Initializing modem...");
   SerialAT.begin(115200, SERIAL_8N1, 16, 17);
   delay(6000);
@@ -134,7 +133,7 @@ bool setup_wifi() {
   Serial.println("Connecting to WiFi...");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  int max_attempts = 20; // Try for about 10 seconds (20 * 500ms)
+  int max_attempts = 20;  // Try for about 10 seconds (20 * 500ms)
   while (WiFi.status() != WL_CONNECTED && max_attempts > 0) {
     delay(500);
     Serial.print(".");
@@ -176,7 +175,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
-  
+
   char message[length + 1];
   memcpy(message, payload, length);
   message[length] = '\0';
@@ -209,9 +208,9 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   }
 
   // Publish status immediately after a command for faster feedback
-  delay(100); // Give VFD a moment to process command
+  delay(100);  // Give VFD a moment to process command
   publishStatus();
-  lastStatusPublish = millis(); // Reset status publish timer
+  lastStatusPublish = millis();  // Reset status publish timer
 }
 
 void mqtt_reconnect() {
@@ -226,10 +225,10 @@ void mqtt_reconnect() {
   // If network is not connected, try to re-establish it
   if (!network_connected) {
     Serial.println("Underlying network lost. Re-establishing...");
-    setup_network(); // This will either reconnect or restart ESP
+    setup_network();  // This will either reconnect or restart ESP
     // If ESP restarts, this function call terminates.
     // If it reconnects, activeClient might have changed (e.g. GPRS->WiFi), so reset mqttClient.
-    mqttClient.setClient(*activeClient); 
+    mqttClient.setClient(*activeClient);
   }
 
   // Now attempt MQTT connection
@@ -260,9 +259,9 @@ void setup() {
   node.preTransmission(preTransmission);
   node.postTransmission(postTransmission);
 
-  setup_network(); // Establish network connection (GPRS or WiFi)
-  
-  mqttClient.setClient(*activeClient); // Set the MQTT client to use the active network client
+  setup_network();  // Establish network connection (GPRS or WiFi)
+
+  mqttClient.setClient(*activeClient);  // Set the MQTT client to use the active network client
   mqttClient.setServer(mqtt_broker, mqtt_port);
   mqttClient.setCallback(mqtt_callback);
 }
@@ -270,29 +269,29 @@ void setup() {
 void publishStatus() {
   StaticJsonDocument<256> doc;
   uint8_t result;
-  const int modbus_delay = 50; // Delay in ms between Modbus reads
+  const int modbus_delay = 50;  // Delay in ms between Modbus reads
 
   // Read data from VFD
   result = node.readHoldingRegisters(REG_OUTPUT_FREQ, 1);
   doc["frequency"] = (result == node.ku8MBSuccess) ? node.getResponseBuffer(0) / 100.0 : 0;
   delay(modbus_delay);
-  
+
   result = node.readHoldingRegisters(REG_OUTPUT_CURRENT, 1);
   doc["current"] = (result == node.ku8MBSuccess) ? node.getResponseBuffer(0) / 100.0 : 0;
   delay(modbus_delay);
-  
+
   result = node.readHoldingRegisters(REG_OUTPUT_VOLTAGE, 1);
   doc["voltage"] = (result == node.ku8MBSuccess) ? node.getResponseBuffer(0) / 10.0 : 0;
   delay(modbus_delay);
 
   result = node.readHoldingRegisters(REG_MOTOR_STATUS, 1);
   doc["motorState"] = (result == node.ku8MBSuccess && node.getResponseBuffer(0) != 0) ? "Running" : "Stopped";
-  
+
   doc["vfd_responding"] = (result == node.ku8MBSuccess);
   delay(modbus_delay);
 
   // You need to implement logic to calculate RPM based on frequency and motor poles
-  doc["rpm"] = (doc["frequency"] > 0) ? (int)(doc["frequency"].as<float>() * 60) : 0; // RPM = (Hz * 120) / poles. For 2-pole motor, RPM = Hz * 60.
+  doc["rpm"] = (doc["frequency"] > 0) ? (int)(doc["frequency"].as<float>() * 60) : 0;  // RPM = (Hz * 120) / poles. For 2-pole motor, RPM = Hz * 60.
 
   result = node.readHoldingRegisters(REG_FAULT_HISTORY, 1);
   doc["fault"] = (result == node.ku8MBSuccess) ? String(node.getResponseBuffer(0)) : "N/A";
