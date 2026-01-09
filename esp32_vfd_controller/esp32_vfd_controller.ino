@@ -94,6 +94,7 @@ unsigned long lastStatusPublish = 0;
 const long statusPublishInterval = 5000; // Publish status every 5 seconds
 
 void publishStatus(); // Forward declaration for use in mqtt_callback
+void setup_network(); // Forward declaration for use in setup() and mqtt_reconnect()
 
 void preTransmission() {
   digitalWrite(MAX485_DE_RE_PIN, HIGH);
@@ -142,28 +143,29 @@ bool setup_wifi() {
     return true;
   } else {
     Serial.println("");
-      Serial.println("WiFi connection failed.");
-      return false;
-    }
-    
-    void setup_network() {
-      Serial.println("Attempting GPRS connection...");
-      if (setup_gprs()) {
-        activeClient = &gsmClient;
-        Serial.println("Network connected via GPRS.");
-        return;
-      }
-      Serial.println("GPRS failed, attempting WiFi connection...");
-      if (setup_wifi()) {
-        activeClient = &wifiClient;
-        Serial.println("Network connected via WiFi.");
-        return;
-      }
-    
-      Serial.println("All network connections failed, restarting ESP...");
-      delay(5000);
-      ESP.restart();
-    }}
+    Serial.println("WiFi connection failed.");
+    return false;
+  }
+}
+
+void setup_network() {
+  Serial.println("Attempting GPRS connection...");
+  if (setup_gprs()) {
+    activeClient = &gsmClient;
+    Serial.println("Network connected via GPRS.");
+    return;
+  }
+  Serial.println("GPRS failed, attempting WiFi connection...");
+  if (setup_wifi()) {
+    activeClient = &wifiClient;
+    Serial.println("Network connected via WiFi.");
+    return;
+  }
+
+  Serial.println("All network connections failed, restarting ESP...");
+  delay(5000);
+  ESP.restart();
+}
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
