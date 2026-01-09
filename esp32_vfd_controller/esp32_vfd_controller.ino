@@ -79,11 +79,15 @@ const char* mqtt_topic_status = "vfd/status";
 #include <PubSubClient.h>
 #include <ModbusMaster.h>
 #include <ArduinoJson.h>
+#include <WiFi.h> // Required for WiFiClient
+#include <ESP.h> // Required for ESP.restart()
 
 // --- Globals ---
 TinyGsm modem(SerialAT);
 TinyGsmClient gsmClient(modem);
-PubSubClient mqttClient(gsmClient);
+WiFiClient wifiClient; // Declare WiFi client
+Client* activeClient = &gsmClient; // Pointer to the currently active network client
+PubSubClient mqttClient(*activeClient); // MQTT client, initialized with the active client
 ModbusMaster node;
 
 unsigned long lastStatusPublish = 0;
@@ -99,7 +103,7 @@ void postTransmission() {
   digitalWrite(MAX485_DE_RE_PIN, LOW);
 }
 
-void setup_gprs() {
+bool setup_gprs() {
   Serial.println("Initializing modem...");
   SerialAT.begin(115200, SERIAL_8N1, 16, 17);
   delay(6000);
@@ -107,19 +111,59 @@ void setup_gprs() {
 
   Serial.println("Waiting for network...");
   if (!modem.waitForNetwork()) {
-    Serial.println(" failed to connect to network. Retrying...");
-    delay(10000);
-    ESP.restart();
+    Serial.println("GPRS: failed to connect to network.");
+    return false;
   }
 
   Serial.println("Connecting to GPRS...");
   if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
-    Serial.println(" failed to connect to GPRS. Retrying...");
-    delay(10000);
-    ESP.restart();
+    Serial.println("GPRS: failed to connect to GPRS.");
+    return false;
   }
   Serial.println("GPRS connected");
+  return true;
 }
+
+bool setup_wifi() {
+  Serial.println("Connecting to WiFi...");
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  int max_attempts = 20; // Try for about 10 seconds (20 * 500ms)
+  while (WiFi.status() != WL_CONNECTED && max_attempts > 0) {
+    delay(500);
+    Serial.print(".");
+    max_attempts--;
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("");
+    Serial.print("WiFi connected, IP address: ");
+    Serial.println(WiFi.localIP());
+    return true;
+  } else {
+    Serial.println("");
+      Serial.println("WiFi connection failed.");
+      return false;
+    }
+    
+    void setup_network() {
+      Serial.println("Attempting GPRS connection...");
+      if (setup_gprs()) {
+        activeClient = &gsmClient;
+        Serial.println("Network connected via GPRS.");
+        return;
+      }
+      Serial.println("GPRS failed, attempting WiFi connection...");
+      if (setup_wifi()) {
+        activeClient = &wifiClient;
+        Serial.println("Network connected via WiFi.");
+        return;
+      }
+    
+      Serial.println("All network connections failed, restarting ESP...");
+      delay(5000);
+      ESP.restart();
+    }}
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
@@ -164,6 +208,24 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void mqtt_reconnect() {
+  // Check if underlying network is connected (GPRS or WiFi)
+  bool network_connected = false;
+  if (activeClient == &gsmClient) {
+    network_connected = modem.isGprsConnected();
+  } else if (activeClient == &wifiClient) {
+    network_connected = (WiFi.status() == WL_CONNECTED);
+  }
+
+  // If network is not connected, try to re-establish it
+  if (!network_connected) {
+    Serial.println("Underlying network lost. Re-establishing...");
+    setup_network(); // This will either reconnect or restart ESP
+    // If ESP restarts, this function call terminates.
+    // If it reconnects, activeClient might have changed (e.g. GPRS->WiFi), so reset mqttClient.
+    mqttClient.setClient(*activeClient); 
+  }
+
+  // Now attempt MQTT connection
   while (!mqttClient.connected()) {
     Serial.print("Attempting MQTT connection...");
     String clientId = "esp32-vfd-client-";
@@ -191,8 +253,9 @@ void setup() {
   node.preTransmission(preTransmission);
   node.postTransmission(postTransmission);
 
-  setup_gprs();
+  setup_network(); // Establish network connection (GPRS or WiFi)
   
+  mqttClient.setClient(*activeClient); // Set the MQTT client to use the active network client
   mqttClient.setServer(mqtt_broker, mqtt_port);
   mqttClient.setCallback(mqtt_callback);
 }

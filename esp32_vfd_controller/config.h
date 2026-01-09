@@ -15,5 +15,9 @@
 #define MQTT_USERNAME "espmodmqtt"
 #define MQTT_PASSWORD "Espmod800485"
 
+// -- WiFi Configuration --
+// Replace with your WiFi SSID and Password
+#define WIFI_SSID "espmodbustru_test_network"
+#define WIFI_PASSWORD "Myesp@123"
 
 #endif // CONFIG_H
