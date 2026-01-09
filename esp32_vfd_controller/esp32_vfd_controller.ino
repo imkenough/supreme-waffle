@@ -80,14 +80,17 @@ const char* mqtt_topic_status = "vfd/status";
 #include <ModbusMaster.h>
 #include <ArduinoJson.h>
 #include <WiFi.h> // Required for WiFiClient
+#include <WiFiClientSecure.h>
 #include <ESP.h> // Required for ESP.restart()
 
 // --- Globals ---
 TinyGsm modem(SerialAT);
-TinyGsmClient gsmClient(modem);
-WiFiClient wifiClient; // Declare WiFi client
-Client* activeClient = &gsmClient; // Pointer to the currently active network client
-PubSubClient mqttClient(*activeClient); // MQTT client, initialized with the active client
+// Use secure clients for MQTTS (port 8883)
+TinyGsmClientSecure gsmClient(modem);
+WiFiClientSecure wifiClient;
+Client* activeClient = nullptr; // Pointer to the currently active network client, null until network is up
+
+PubSubClient mqttClient; // Initialize empty, will be configured in setup
 ModbusMaster node;
 
 unsigned long lastStatusPublish = 0;
@@ -105,6 +108,7 @@ void postTransmission() {
 }
 
 bool setup_gprs() {
+  gsmClient.setInsecure(); // For debugging: bypass SSL certificate validation
   Serial.println("Initializing modem...");
   SerialAT.begin(115200, SERIAL_8N1, 16, 17);
   delay(6000);
@@ -126,6 +130,7 @@ bool setup_gprs() {
 }
 
 bool setup_wifi() {
+  wifiClient.setInsecure(); // For debugging: bypass SSL certificate validation
   Serial.println("Connecting to WiFi...");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 

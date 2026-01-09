@@ -10,8 +10,8 @@
 
 // -- MQTT Configuration --
 // Replace with your HiveMQ Cluster URL, Port, Username, and Password
-#define MQTT_BROKER "your-cluster-url.s1.eu.hivemq.cloud"
-#define MQTT_PORT 1883
+#define MQTT_BROKER "5fac3f84f07f47cf9aab783573d2381d.s1.eu.hivemq.cloud"
+#define MQTT_PORT 8883
 #define MQTT_USERNAME "espmodmqtt"
 #define MQTT_PASSWORD "Espmod800485"
 
