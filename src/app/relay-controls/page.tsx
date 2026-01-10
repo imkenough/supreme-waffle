@@ -1,5 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import mqtt from "mqtt";
 import {
   Breadcrumb,
@@ -21,8 +21,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Status, StatusIndicator, StatusLabel } from "@/components/ui/status";
-import { Badge } from "@/components/ui/badge";
+// import { Status, StatusIndicator, StatusLabel } from "@/components/ui/status";
+// import { Badge } from "@/components/ui/badge";
 
 function ErrorDisplay({ message }: { message: string }) {
   return (
@@ -31,7 +31,8 @@ function ErrorDisplay({ message }: { message: string }) {
         <CardHeader>
           <CardTitle className="text-red-500">Configuration Error</CardTitle>
           <CardDescription>
-            The relay controls cannot start due to missing environment variables.
+            The relay controls cannot start due to missing environment
+            variables.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -72,7 +73,12 @@ export default function Page() {
   }
 
   const [client, setClient] = useState<mqtt.MqttClient | null>(null);
-  const [relayStates, setRelayStates] = useState<boolean[]>([false, false, false, false]);
+  const [relayStates, setRelayStates] = useState<boolean[]>([
+    false,
+    false,
+    false,
+    false,
+  ]);
   const [mqttConnected, setMqttConnected] = useState(false);
   const [esp32Online, setEsp32Online] = useState(false);
 
@@ -141,11 +147,15 @@ export default function Page() {
         if (err) {
           console.error("Publish error:", err);
         } else {
-          console.log(`Published relay ${relayNum} command: ${state ? "ON" : "OFF"}`);
+          console.log(
+            `Published relay ${relayNum} command: ${state ? "ON" : "OFF"}`
+          );
         }
       });
     } else {
-      console.warn("MQTT client not connected or ESP32 offline. Cannot send command.");
+      console.warn(
+        "MQTT client not connected or ESP32 offline. Cannot send command."
+      );
     }
   };
 
@@ -183,12 +193,19 @@ export default function Page() {
           {(!mqttConnected || !esp32Online) && (
             <Card className="w-full bg-yellow-100 border-yellow-400 text-yellow-800">
               <CardHeader>
-                <CardTitle className="text-yellow-800">Connection Warning</CardTitle>
+                <CardTitle className="text-yellow-800">
+                  Connection Warning
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {!mqttConnected && <p>Not connected to MQTT broker.</p>}
-                {!esp32Online && <p>ESP32 is offline or not sending status updates.</p>}
-                <p className="mt-2 text-sm">Relay commands will not be sent until connection is established.</p>
+                {!esp32Online && (
+                  <p>ESP32 is offline or not sending status updates.</p>
+                )}
+                <p className="mt-2 text-sm">
+                  Relay commands will not be sent until connection is
+                  established.
+                </p>
               </CardContent>
             </Card>
           )}
