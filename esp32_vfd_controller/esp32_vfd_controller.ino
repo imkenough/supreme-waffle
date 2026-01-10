@@ -52,6 +52,7 @@ const char* mqtt_password = MQTT_PASSWORD;
 const char* mqtt_topic_control = "vfd/control";
 const char* mqtt_topic_status = "vfd/status";
 const char* mqtt_topic_logs = MQTT_TOPIC_LOGS;
+const char* mqtt_topic_relays = "vfd/relays";
 
 // Define the serial port for the SIM800C
 #define SerialAT Serial2
@@ -211,6 +212,27 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         publishLog("ERROR: Failed to send set_frequency command to VFD");
       }
     }
+  } else if (strcmp(topic, mqtt_topic_relays) == 0) {
+    const char* relay_command = doc["relay_command"];
+    int relay_num = doc["relay_num"];
+    bool state = doc["state"];
+
+    int pin_to_control = -1;
+    switch (relay_num) {
+      case 1: pin_to_control = RELAY_PIN_1; break;
+      case 2: pin_to_control = RELAY_PIN_2; break;
+      case 3: pin_to_control = RELAY_PIN_3; break;
+      case 4: pin_to_control = RELAY_PIN_4; break;
+    }
+
+    if (pin_to_control != -1) {
+      // Assuming active LOW relays, HIGH = OFF, LOW = ON
+      digitalWrite(pin_to_control, state ? LOW : HIGH);
+      String log = "Relay " + String(relay_num) + " set to " + (state ? "ON" : "OFF");
+      publishLog(log);
+    } else {
+      publishLog("ERROR: Invalid relay number received");
+    }
   }
 
   // Publish status immediately after a command for faster feedback
@@ -245,6 +267,7 @@ void mqtt_reconnect() {
     if (mqttClient.connect(clientId.c_str(), mqtt_username, mqtt_password)) {
       publishLog("MQTT connected");
       mqttClient.subscribe(mqtt_topic_control);
+      mqttClient.subscribe(mqtt_topic_relays);
     } else {
       String logMsg = "MQTT connection failed, rc=" + String(mqttClient.state()) + ". Retrying in 5 seconds...";
       publishLog(logMsg);
@@ -256,6 +279,17 @@ void setup() {
   Serial.begin(115200);
   pinMode(MAX485_DE_RE_PIN, OUTPUT);
   digitalWrite(MAX485_DE_RE_PIN, LOW);
+
+  // --- Relay Pin Setup ---
+  pinMode(RELAY_PIN_1, OUTPUT);
+  pinMode(RELAY_PIN_2, OUTPUT);
+  pinMode(RELAY_PIN_3, OUTPUT);
+  pinMode(RELAY_PIN_4, OUTPUT);
+  // Initialize all relays to OFF (assuming active LOW relays)
+  digitalWrite(RELAY_PIN_1, HIGH);
+  digitalWrite(RELAY_PIN_2, HIGH);
+  digitalWrite(RELAY_PIN_3, HIGH);
+  digitalWrite(RELAY_PIN_4, HIGH);
 
   // --- Modbus Setup ---
   Serial1.begin(9600, SERIAL_8E1, 26, 27);

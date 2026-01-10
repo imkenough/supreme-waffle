@@ -22,4 +22,10 @@
 #define WIFI_SSID "espmodbustru_test_network"
 #define WIFI_PASSWORD "Myesp@123"
 
+// -- Relay Configuration --
+#define RELAY_PIN_1 14 // Connected to IN1
+#define RELAY_PIN_2 12 // Connected to IN2
+#define RELAY_PIN_3 32 // Connected to IN3
+#define RELAY_PIN_4 33 // Connected to IN4
+
 #endif // CONFIG_H
