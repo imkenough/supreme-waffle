@@ -6,6 +6,7 @@ import {
   FileText,
   LayoutDashboard,
   PieChart,
+  Power,
   Settings2,
   ShieldAlert,
 } from "lucide-react"
@@ -53,6 +54,11 @@ const data = {
       title: "Fault/Err History",
       url: "/fault-history",
       icon: ShieldAlert,
+    },
+    {
+      title: "Relay Controls",
+      url: "/relay-controls",
+      icon: Power,
     },
   ],
   projects: [],

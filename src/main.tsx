@@ -9,6 +9,7 @@ import LogsPage from "./app/logs/page.tsx";
 import DocsPage from "./app/docs/page.tsx";
 import FaultHistoryPage from "./app/fault-history/page.tsx";
 import SettingsPage from "./app/settings/page.tsx";
+import RelayControlsPage from "./app/relay-controls/page.tsx";
 
 const router = createBrowserRouter([
   {
@@ -42,6 +43,10 @@ const router = createBrowserRouter([
       {
         path: "settings",
         element: <SettingsPage />,
+      },
+      {
+        path: "relay-controls",
+        element: <RelayControlsPage />,
       },
     ],
   },
