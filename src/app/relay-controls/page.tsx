@@ -1,4 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar";
+import React, { useState, useEffect } from "react";
+import mqtt from "mqtt";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,7 +16,60 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
+// --- MQTT Configuration ---
+const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL;
+const MQTT_USERNAME = import.meta.env.VITE_MQTT_USERNAME;
+const MQTT_PASSWORD = import.meta.env.VITE_MQTT_PASSWORD;
+const MQTT_TOPIC_CONTROL = "vfd/control";
+
+
 export default function RelayControlsPage() {
+  const [client, setClient] = useState<mqtt.MqttClient | null>(null);
+  const [relayStates, setRelayStates] = useState([false, false, false, false]);
+
+  useEffect(() => {
+    const mqttClient = mqtt.connect(MQTT_BROKER_URL, {
+      username: MQTT_USERNAME,
+      password: MQTT_PASSWORD,
+    });
+    mqttClient.on("connect", () => {
+      setClient(mqttClient);
+      console.log("Connected to MQTT broker for relay controls.");
+    });
+
+    mqttClient.on("error", (err) => {
+      console.error("MQTT client error:", err);
+    });
+
+    return () => {
+      if (mqttClient) {
+        mqttClient.end();
+      }
+    };
+  }, []);
+
+  const publishCommand = (command: object) => {
+    if (client) {
+      client.publish(MQTT_TOPIC_CONTROL, JSON.stringify(command), (err) => {
+        if (err) {
+          console.error("Publish error:", err);
+        }
+      });
+    }
+  };
+
+  const handleRelayToggle = (relayIndex: number, checked: boolean) => {
+    const newRelayStates = [...relayStates];
+    newRelayStates[relayIndex] = checked;
+    setRelayStates(newRelayStates);
+
+    publishCommand({
+      command: "set_relay",
+      relay: relayIndex + 1,
+      state: checked ? "on" : "off",
+    });
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -38,25 +93,19 @@ export default function RelayControlsPage() {
         <div className="flex-1 p-4 lg:p-6">
           <h1 className="text-2xl font-semibold">Relay Controls</h1>
           <p className="text-muted-foreground">
-            This is the Relay Controls page.
+            Control the 4-channel relay module connected to the ESP32.
           </p>
           <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="flex items-center space-x-2">
-              <Switch id="relay-1" />
-              <Label htmlFor="relay-1">Relay 1</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch id="relay-2" />
-              <Label htmlFor="relay-2">Relay 2</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch id="relay-3" />
-              <Label htmlFor="relay-3">Relay 3</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch id="relay-4" />
-              <Label htmlFor="relay-4">Relay 4</Label>
-            </div>
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="flex items-center space-x-2">
+                <Switch
+                  id={`relay-${i + 1}`}
+                  checked={relayStates[i]}
+                  onCheckedChange={(checked) => handleRelayToggle(i, checked)}
+                />
+                <Label htmlFor={`relay-${i + 1}`}>Relay {i + 1}</Label>
+              </div>
+            ))}
           </div>
         </div>
       </SidebarInset>

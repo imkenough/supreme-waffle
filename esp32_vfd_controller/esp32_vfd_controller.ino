@@ -76,6 +76,12 @@ const char* mqtt_topic_logs = MQTT_TOPIC_LOGS;
 // Define the GSM modem model you are using
 #define TINY_GSM_MODEM_SIM800
 
+// --- Relay Configuration ---
+#define RELAY_PIN_1 32
+#define RELAY_PIN_2 33
+#define RELAY_PIN_3 14
+#define RELAY_PIN_4 12
+
 #include <TinyGsmClient.h>
 #include <PubSubClient.h>
 #include <ModbusMaster.h>
@@ -211,6 +217,27 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         publishLog("ERROR: Failed to send set_frequency command to VFD");
       }
     }
+  } else if (strcmp(command, "set_relay") == 0) {
+    int relay_id = doc["relay"];
+    const char* state = doc["state"];
+
+    int pin = -1;
+    switch(relay_id) {
+      case 1: pin = RELAY_PIN_1; break;
+      case 2: pin = RELAY_PIN_2; break;
+      case 3: pin = RELAY_PIN_3; break;
+      case 4: pin = RELAY_PIN_4; break;
+    }
+
+    if (pin != -1) {
+      if (strcmp(state, "on") == 0) {
+        digitalWrite(pin, HIGH);
+        publishLog("Turned on relay " + String(relay_id));
+      } else if (strcmp(state, "off") == 0) {
+        digitalWrite(pin, LOW);
+        publishLog("Turned off relay " + String(relay_id));
+      }
+    }
   }
 
   // Publish status immediately after a command for faster feedback
@@ -268,6 +295,16 @@ void setup() {
   mqttClient.setClient(*activeClient);  // Set the MQTT client to use the active network client
   mqttClient.setServer(mqtt_broker, mqtt_port);
   mqttClient.setCallback(mqtt_callback);
+
+  // --- Relay Setup ---
+  pinMode(RELAY_PIN_1, OUTPUT);
+  pinMode(RELAY_PIN_2, OUTPUT);
+  pinMode(RELAY_PIN_3, OUTPUT);
+  pinMode(RELAY_PIN_4, OUTPUT);
+  digitalWrite(RELAY_PIN_1, LOW);
+  digitalWrite(RELAY_PIN_2, LOW);
+  digitalWrite(RELAY_PIN_3, LOW);
+  digitalWrite(RELAY_PIN_4, LOW);
 }
 
 void publishStatus() {
