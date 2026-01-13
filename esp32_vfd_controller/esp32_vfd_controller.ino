@@ -231,10 +231,10 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 
     if (pin != -1) {
       if (strcmp(state, "on") == 0) {
-        digitalWrite(pin, HIGH);
+        digitalWrite(pin, LOW);
         publishLog("Turned on relay " + String(relay_id));
       } else if (strcmp(state, "off") == 0) {
-        digitalWrite(pin, LOW);
+        digitalWrite(pin, HIGH);
         publishLog("Turned off relay " + String(relay_id));
       }
     }
@@ -301,10 +301,10 @@ void setup() {
   pinMode(RELAY_PIN_2, OUTPUT);
   pinMode(RELAY_PIN_3, OUTPUT);
   pinMode(RELAY_PIN_4, OUTPUT);
-  digitalWrite(RELAY_PIN_1, LOW);
-  digitalWrite(RELAY_PIN_2, LOW);
-  digitalWrite(RELAY_PIN_3, LOW);
-  digitalWrite(RELAY_PIN_4, LOW);
+  digitalWrite(RELAY_PIN_1, HIGH);
+  digitalWrite(RELAY_PIN_2, HIGH);
+  digitalWrite(RELAY_PIN_3, HIGH);
+  digitalWrite(RELAY_PIN_4, HIGH);
 }
 
 void publishStatus() {
