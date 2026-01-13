@@ -167,18 +167,33 @@ bool setup_wifi() {
 }
 
 void setup_network() {
-  publishLog("Attempting GPRS connection...");
-  if (setup_gprs()) {
-    activeClient = &gsmClient;
-    publishLog("Network connected via GPRS.");
-    return;
-  }
-  publishLog("GPRS failed, attempting WiFi connection...");
-  if (setup_wifi()) {
-    activeClient = &wifiClient;
-    publishLog("Network connected via WiFi.");
-    return;
-  }
+  #if WIFI_FIRST
+    publishLog("Attempting WiFi connection first...");
+    if (setup_wifi()) {
+      activeClient = &wifiClient;
+      publishLog("Network connected via WiFi.");
+      return;
+    }
+    publishLog("WiFi failed, attempting GPRS connection...");
+    if (setup_gprs()) {
+      activeClient = &gsmClient;
+      publishLog("Network connected via GPRS.");
+      return;
+    }
+  #else
+    publishLog("Attempting GPRS connection first...");
+    if (setup_gprs()) {
+      activeClient = &gsmClient;
+      publishLog("Network connected via GPRS.");
+      return;
+    }
+    publishLog("GPRS failed, attempting WiFi connection...");
+    if (setup_wifi()) {
+      activeClient = &wifiClient;
+      publishLog("Network connected via WiFi.");
+      return;
+    }
+  #endif
 
   publishLog("All network connections failed, restarting ESP...");
   delay(5000);

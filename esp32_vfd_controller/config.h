@@ -4,9 +4,8 @@
 // -- GPRS Configuration --
 // Replace with your mobile carrier's APN
 #define GPRS_APN "YOUR_APN"
-#define GPRS_USER ""
+#define GPRS_USER "" //
 #define GPRS_PASS ""
-
 
 // -- MQTT Configuration --
 // Replace with your HiveMQ Cluster URL, Port, Username, and Password
@@ -21,5 +20,9 @@
 // Replace with your WiFi SSID and Password
 #define WIFI_SSID "espmodbustru_test_network"
 #define WIFI_PASSWORD "Myesp@123"
+
+// -- Connection Priority --
+// Set to true to attempt WiFi connection first, false to attempt sim GPRS first.
+#define WIFI_FIRST true
 
 #endif // CONFIG_H
