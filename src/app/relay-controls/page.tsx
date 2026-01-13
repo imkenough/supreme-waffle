@@ -11,6 +11,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export default function RelayControlsPage() {
   return (
@@ -38,6 +40,24 @@ export default function RelayControlsPage() {
           <p className="text-muted-foreground">
             This is the Relay Controls page.
           </p>
+          <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="flex items-center space-x-2">
+              <Switch id="relay-1" />
+              <Label htmlFor="relay-1">Relay 1</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch id="relay-2" />
+              <Label htmlFor="relay-2">Relay 2</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch id="relay-3" />
+              <Label htmlFor="relay-3">Relay 3</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch id="relay-4" />
+              <Label htmlFor="relay-4">Relay 4</Label>
+            </div>
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>
