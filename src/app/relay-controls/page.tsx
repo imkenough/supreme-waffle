@@ -21,7 +21,7 @@ const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL;
 const MQTT_USERNAME = import.meta.env.VITE_MQTT_USERNAME;
 const MQTT_PASSWORD = import.meta.env.VITE_MQTT_PASSWORD;
 const MQTT_TOPIC_CONTROL = "vfd/control";
-const MQTT_TOPIC_STATUS = "vfd/status";
+const MQTT_TOPIC_STATUS = "vfd/relays/status";
 
 export default function RelayControlsPage() {
   const [client, setClient] = useState<mqtt.MqttClient | null>(null);

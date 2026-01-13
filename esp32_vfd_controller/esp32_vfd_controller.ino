@@ -51,6 +51,7 @@ const char* mqtt_username = MQTT_USERNAME;
 const char* mqtt_password = MQTT_PASSWORD;
 const char* mqtt_topic_control = "vfd/control";
 const char* mqtt_topic_status = "vfd/status";
+const char* mqtt_topic_relays_status = "vfd/relays/status"; // New topic for relays
 const char* mqtt_topic_logs = MQTT_TOPIC_LOGS;
 
 // Define the serial port for the SIM800C
@@ -103,7 +104,8 @@ ModbusMaster node;
 unsigned long lastStatusPublish = 0;
 const long statusPublishInterval = 5000;  // Publish status every 5 seconds
 
-void publishStatus();  // Forward declaration for use in mqtt_callback
+void publishStatus();  // Forward declaration
+void publishRelayStatus(); // Forward declaration
 void setup_network();  // Forward declaration for use in setup() and mqtt_reconnect()
 
 void preTransmission() {
@@ -264,6 +266,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         digitalWrite(pin, HIGH);
         publishLog("Turned off relay " + String(relay_id));
       }
+      publishRelayStatus(); // Immediately publish new relay status
     }
   }
 }
@@ -294,6 +297,7 @@ void mqtt_reconnect() {
     if (mqttClient.connect(clientId.c_str(), mqtt_username, mqtt_password)) {
       publishLog("MQTT connected");
       mqttClient.subscribe(mqtt_topic_control);
+      publishRelayStatus(); // Publish relay status on reconnect
     } else {
       String logMsg = "MQTT connection failed, rc=" + String(mqttClient.state()) + ". Retrying in 5 seconds...";
       publishLog(logMsg);
@@ -312,25 +316,45 @@ void setup() {
   node.preTransmission(preTransmission);
   node.postTransmission(postTransmission);
 
+  // --- Relay Setup ---
+  pinMode(RELAY_PIN_1, OUTPUT);
+  pinMode(RELAY_PIN_2, OUTPUT);
+  pinMode(RELAY_PIN_3, OUTPUT);
+  pinMode(RELAY_PIN_4, OUTPUT);
+  digitalWrite(RELAY_PIN_1, HIGH); // Default OFF
+  digitalWrite(RELAY_PIN_2, HIGH); // Default OFF
+  digitalWrite(RELAY_PIN_3, HIGH); // Default OFF
+  digitalWrite(RELAY_PIN_4, HIGH); // Default OFF
+  
   setup_network();  // Establish network connection (GPRS or WiFi)
 
   mqttClient.setClient(*activeClient);  // Set the MQTT client to use the active network client
   mqttClient.setServer(mqtt_broker, mqtt_port);
   mqttClient.setCallback(mqtt_callback);
 
-  // --- Relay Setup ---
-  pinMode(RELAY_PIN_1, OUTPUT);
-  pinMode(RELAY_PIN_2, OUTPUT);
-  pinMode(RELAY_PIN_3, OUTPUT);
-  pinMode(RELAY_PIN_4, OUTPUT);
-  digitalWrite(RELAY_PIN_1, HIGH);
-  digitalWrite(RELAY_PIN_2, HIGH);
-  digitalWrite(RELAY_PIN_3, HIGH);
-  digitalWrite(RELAY_PIN_4, HIGH);
+  // Wait for MQTT to be ready before first publish
+  if (!mqttClient.connected()) {
+    mqtt_reconnect();
+  }
+  publishRelayStatus(); // Publish initial relay status
+}
+
+void publishRelayStatus() {
+  StaticJsonDocument<100> doc;
+  JsonArray relayStates = doc.createNestedArray("relayStates");
+  relayStates.add(digitalRead(RELAY_PIN_1) == LOW); // LOW means ON
+  relayStates.add(digitalRead(RELAY_PIN_2) == LOW);
+  relayStates.add(digitalRead(RELAY_PIN_3) == LOW);
+  relayStates.add(digitalRead(RELAY_PIN_4) == LOW);
+
+  char buffer[100];
+  serializeJson(doc, buffer);
+  mqttClient.publish(mqtt_topic_relays_status, buffer, true); // Publish with retain flag
+  publishLog("Published relay status: " + String(buffer));
 }
 
 void publishStatus() {
-  StaticJsonDocument<300> doc;
+  StaticJsonDocument<256> doc;
   uint8_t result;
   const int modbus_delay = 50;  // Delay in ms between Modbus reads
 
@@ -359,17 +383,10 @@ void publishStatus() {
   result = node.readHoldingRegisters(REG_FAULT_HISTORY, 1);
   doc["fault"] = (result == node.ku8MBSuccess) ? String(node.getResponseBuffer(0)) : "N/A";
 
-  // Read relay states
-  JsonArray relayStates = doc.createNestedArray("relayStates");
-  relayStates.add(digitalRead(RELAY_PIN_1) == LOW); // LOW means ON
-  relayStates.add(digitalRead(RELAY_PIN_2) == LOW);
-  relayStates.add(digitalRead(RELAY_PIN_3) == LOW);
-  relayStates.add(digitalRead(RELAY_PIN_4) == LOW);
-
-  char buffer[300];
+  char buffer[256];
   serializeJson(doc, buffer);
   mqttClient.publish(mqtt_topic_status, buffer, true); // Publish with retain flag
-  Serial.print("Published status: ");
+  Serial.print("Published VFD status: ");
   Serial.println(buffer);
 }
 
