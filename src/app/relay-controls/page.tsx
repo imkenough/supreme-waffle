@@ -21,6 +21,7 @@ const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL;
 const MQTT_USERNAME = import.meta.env.VITE_MQTT_USERNAME;
 const MQTT_PASSWORD = import.meta.env.VITE_MQTT_PASSWORD;
 const MQTT_TOPIC_CONTROL = "vfd/control";
+const MQTT_TOPIC_STATUS = "vfd/status";
 
 export default function RelayControlsPage() {
   const [client, setClient] = useState<mqtt.MqttClient | null>(null);
@@ -34,6 +35,24 @@ export default function RelayControlsPage() {
     mqttClient.on("connect", () => {
       setClient(mqttClient);
       console.log("Connected to MQTT broker for relay controls.");
+      mqttClient.subscribe(MQTT_TOPIC_STATUS, (err) => {
+        if (err) {
+          console.error("Subscribe to status error:", err);
+        }
+      });
+    });
+
+    mqttClient.on("message", (topic, payload) => {
+      if (topic === MQTT_TOPIC_STATUS) {
+        try {
+          const status = JSON.parse(payload.toString());
+          if (status.relayStates && Array.isArray(status.relayStates)) {
+            setRelayStates(status.relayStates);
+          }
+        } catch (e) {
+          console.error("Failed to parse status message", e);
+        }
+      }
     });
 
     mqttClient.on("error", (err) => {

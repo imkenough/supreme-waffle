@@ -330,7 +330,7 @@ void setup() {
 }
 
 void publishStatus() {
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<300> doc;
   uint8_t result;
   const int modbus_delay = 50;  // Delay in ms between Modbus reads
 
@@ -359,9 +359,16 @@ void publishStatus() {
   result = node.readHoldingRegisters(REG_FAULT_HISTORY, 1);
   doc["fault"] = (result == node.ku8MBSuccess) ? String(node.getResponseBuffer(0)) : "N/A";
 
-  char buffer[256];
+  // Read relay states
+  JsonArray relayStates = doc.createNestedArray("relayStates");
+  relayStates.add(digitalRead(RELAY_PIN_1) == LOW); // LOW means ON
+  relayStates.add(digitalRead(RELAY_PIN_2) == LOW);
+  relayStates.add(digitalRead(RELAY_PIN_3) == LOW);
+  relayStates.add(digitalRead(RELAY_PIN_4) == LOW);
+
+  char buffer[300];
   serializeJson(doc, buffer);
-  mqttClient.publish(mqtt_topic_status, buffer);
+  mqttClient.publish(mqtt_topic_status, buffer, true); // Publish with retain flag
   Serial.print("Published status: ");
   Serial.println(buffer);
 }
