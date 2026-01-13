@@ -8,6 +8,7 @@ import {
   PieChart,
   Settings2,
   ShieldAlert,
+  Power,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -43,6 +44,11 @@ const data = {
       title: "Logs",
       url: "/logs",
       icon: FileText,
+    },
+    {
+      title: "Relay Controls",
+      url: "/relay-controls",
+      icon: Power,
     },
     {
       title: "Pinouts/Diagrams/Docs",
