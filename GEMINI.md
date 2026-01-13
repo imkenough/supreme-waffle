@@ -17,37 +17,37 @@ The overall architecture allows a user to send commands (e.g., start motor, set 
 
 The frontend is a standard Vite-powered React application. Key commands are defined in `package.json`.
 
-*   **Install dependencies:**
-    ```bash
-    npm install
-    ```
-*   **Run development server:**
-    ```bash
-    npm run dev
-    ```
-*   **Build for production:**
-    ```bash
-    npm run build
-    ```
-*   **Lint the code:**
-    ```bash
-    npm run lint
-    ```
-*   **Preview the production build:**
-    ```bash
-    npm run preview
-    ```
+- **Install dependencies:**
+  ```bash
+  npm install
+  ```
+- **Run development server:**
+  ```bash
+  npm run dev
+  ```
+- **Build for production:**
+  ```bash
+  npm run build
+  ```
+- **Lint the code:**
+  ```bash
+  npm run lint
+  ```
+- **Preview the production build:**
+  ```bash
+  npm run preview
+  ```
 
 ## Development Conventions
 
-*   **Structure:** The React source code is located in the `src/` directory. It follows a component-based architecture.
-    *   `src/app/`: Contains top-level pages for different routes (dashboard, settings, etc.).
-    *   `src/components/`: Contains reusable React components.
-    *   `src/components/ui/`: Contains base UI components from the shadcn/ui library.
-    *   `src/lib/`: Contains utility functions.
-*   **Styling:** The project uses Tailwind CSS for utility-first styling.
-*   **Configuration:**
-    *   Frontend configuration (MQTT credentials) is managed via a `.env` file in the project root. See `README.md` for required variables.
-    *   Firmware configuration (GPRS & MQTT settings) is managed in the `config.h` file.
-*   **Linting & Formatting:** The project is configured with ESLint (`eslint.config.js`) and TypeScript (`tsconfig.json`) to enforce code quality and consistency.
-*   **Path Aliases:** A `@` alias is configured in `vite.config.ts` to point to the `src/` directory for cleaner import paths.
+- **Structure:** The React source code is located in the `src/` directory. It follows a component-based architecture.
+  - `src/app/`: Contains top-level pages for different routes (dashboard, settings, etc.).
+  - `src/components/`: Contains reusable React components.
+  - `src/components/ui/`: Contains base UI components from the shadcn/ui library.
+  - `src/lib/`: Contains utility functions.
+- **Styling:** The project uses Shadcn for styling, Use MCP server for building anything.
+- **Configuration:**
+  - Frontend configuration (MQTT credentials) is managed via a `.env` file in the project root. See `README.md` for required variables.
+  - Firmware configuration (GPRS & MQTT settings) is managed in the `config.h` file.
+- **Linting & Formatting:** The project is configured with ESLint (`eslint.config.js`) and TypeScript (`tsconfig.json`) to enforce code quality and consistency.
+- **Path Aliases:** A `@` alias is configured in `vite.config.ts` to point to the `src/` directory for cleaner import paths.
