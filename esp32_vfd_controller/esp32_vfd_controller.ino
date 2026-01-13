@@ -219,11 +219,19 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     if (result != node.ku8MBSuccess) {
       publishLog("ERROR: Failed to send start command to VFD");
     }
+    // Publish status immediately after a command for faster feedback
+    delay(100);  // Give VFD a moment to process command
+    publishStatus();
+    lastStatusPublish = millis();  // Reset status publish timer
   } else if (strcmp(command, "stop") == 0 || strcmp(command, "emergency_stop") == 0) {
     result = node.writeSingleRegister(REG_CONTROL, CMD_STOP);
     if (result != node.ku8MBSuccess) {
       publishLog("ERROR: Failed to send stop command to VFD");
     }
+    // Publish status immediately after a command for faster feedback
+    delay(100);  // Give VFD a moment to process command
+    publishStatus();
+    lastStatusPublish = millis();  // Reset status publish timer
   } else if (strcmp(command, "set_frequency") == 0) {
     float frequency = doc["frequency"];
     if (frequency >= 0 && frequency <= 60) {
@@ -232,6 +240,10 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         publishLog("ERROR: Failed to send set_frequency command to VFD");
       }
     }
+    // Publish status immediately after a command for faster feedback
+    delay(100);  // Give VFD a moment to process command
+    publishStatus();
+    lastStatusPublish = millis();  // Reset status publish timer
   } else if (strcmp(command, "set_relay") == 0) {
     int relay_id = doc["relay"];
     const char* state = doc["state"];
@@ -254,11 +266,6 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
       }
     }
   }
-
-  // Publish status immediately after a command for faster feedback
-  delay(100);  // Give VFD a moment to process command
-  publishStatus();
-  lastStatusPublish = millis();  // Reset status publish timer
 }
 
 void mqtt_reconnect() {
