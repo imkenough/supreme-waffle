@@ -26,6 +26,13 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
+// --- MQTT Configuration ---
+const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL;
+const MQTT_USERNAME = import.meta.env.VITE_MQTT_USERNAME;
+const MQTT_PASSWORD = import.meta.env.VITE_MQTT_PASSWORD;
+const MQTT_TOPIC_CONTROL = "vfd/control";
+const MQTT_TOPIC_STATUS = "vfd/status";
+
 function ErrorDisplay({ message }: { message: string }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-4">
@@ -48,31 +55,7 @@ function ErrorDisplay({ message }: { message: string }) {
   );
 }
 
-export default function Page() {
-  // --- MQTT Configuration ---
-  const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL;
-  const MQTT_USERNAME = import.meta.env.VITE_MQTT_USERNAME;
-  const MQTT_PASSWORD = import.meta.env.VITE_MQTT_PASSWORD;
-  const MQTT_TOPIC_CONTROL = "vfd/control";
-  const MQTT_TOPIC_STATUS = "vfd/status";
-
-  // Validate environment variables
-  if (!MQTT_BROKER_URL) {
-    return (
-      <ErrorDisplay message="Missing VITE_MQTT_BROKER_URL environment variable." />
-    );
-  }
-  if (!MQTT_USERNAME) {
-    return (
-      <ErrorDisplay message="Missing VITE_MQTT_USERNAME environment variable." />
-    );
-  }
-  if (!MQTT_PASSWORD) {
-    return (
-      <ErrorDisplay message="Missing VITE_MQTT_PASSWORD environment variable." />
-    );
-  }
-
+function Dashboard() {
   const [client, setClient] = useState<mqtt.MqttClient | null>(null);
   const [motorHertz, setMotorHertz] = useState(0);
 
@@ -161,7 +144,7 @@ export default function Page() {
         mqttClient.end();
       }
     };
-  }, []);
+  }, [MQTT_BROKER_URL, MQTT_USERNAME, MQTT_PASSWORD]);
 
   const publishCommand = (command: object) => {
     if (client) {
@@ -423,4 +406,25 @@ export default function Page() {
       </SidebarInset>
     </SidebarProvider>
   );
+}
+
+export default function Page() {
+  // Validate environment variables
+  if (!MQTT_BROKER_URL) {
+    return (
+      <ErrorDisplay message="Missing VITE_MQTT_BROKER_URL environment variable." />
+    );
+  }
+  if (!MQTT_USERNAME) {
+    return (
+      <ErrorDisplay message="Missing VITE_MQTT_USERNAME environment variable." />
+    );
+  }
+  if (!MQTT_PASSWORD) {
+    return (
+      <ErrorDisplay message="Missing VITE_MQTT_PASSWORD environment variable." />
+    );
+  }
+
+  return <Dashboard />;
 }

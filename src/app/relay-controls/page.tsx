@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
 
 // --- MQTT Configuration ---
 const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL;
@@ -22,10 +24,17 @@ const MQTT_USERNAME = import.meta.env.VITE_MQTT_USERNAME;
 const MQTT_PASSWORD = import.meta.env.VITE_MQTT_PASSWORD;
 const MQTT_TOPIC_CONTROL = "vfd/control";
 const MQTT_TOPIC_STATUS = "vfd/relays/status";
+const MQTT_TOPIC_GET_STATUS = "vfd/relays/get_status";
 
 export default function RelayControlsPage() {
   const [client, setClient] = useState<mqtt.MqttClient | null>(null);
   const [relayStates, setRelayStates] = useState([false, false, false, false]);
+  const [loadingStates, setLoadingStates] = useState([
+    true,
+    true,
+    true,
+    true,
+  ]);
 
   useEffect(() => {
     const mqttClient = mqtt.connect(MQTT_BROKER_URL, {
@@ -38,6 +47,9 @@ export default function RelayControlsPage() {
       mqttClient.subscribe(MQTT_TOPIC_STATUS, (err) => {
         if (err) {
           console.error("Subscribe to status error:", err);
+        } else {
+          // Request initial status on successful subscription
+          mqttClient.publish(MQTT_TOPIC_GET_STATUS, "");
         }
       });
     });
@@ -48,6 +60,8 @@ export default function RelayControlsPage() {
           const status = JSON.parse(payload.toString());
           if (status.relayStates && Array.isArray(status.relayStates)) {
             setRelayStates(status.relayStates);
+            // Once we get a status update, we can assume all relays have reported
+            setLoadingStates([false, false, false, false]);
           }
         } catch (e) {
           console.error("Failed to parse status message", e);
@@ -77,9 +91,15 @@ export default function RelayControlsPage() {
   };
 
   const handleRelayToggle = (relayIndex: number, checked: boolean) => {
+    // Optimistically update the UI for responsiveness
     const newRelayStates = [...relayStates];
     newRelayStates[relayIndex] = checked;
     setRelayStates(newRelayStates);
+
+    // Set loading state for the specific relay
+    const newLoadingStates = [...loadingStates];
+    newLoadingStates[relayIndex] = true;
+    setLoadingStates(newLoadingStates);
 
     publishCommand({
       command: "set_relay",
@@ -122,6 +142,15 @@ export default function RelayControlsPage() {
                   onCheckedChange={(checked) => handleRelayToggle(i, checked)}
                 />
                 <Label htmlFor={`relay-${i + 1}`}>Relay {i + 1}</Label>
+                {loadingStates[i] && (
+                  <Badge
+                    variant="outline"
+                    className="flex items-center gap-1.5"
+                  >
+                    <Spinner />
+                    Updating
+                  </Badge>
+                )}
               </div>
             ))}
           </div>
