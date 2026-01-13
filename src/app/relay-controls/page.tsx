@@ -1,5 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import mqtt from "mqtt";
 import {
   Breadcrumb,
@@ -21,7 +21,6 @@ const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL;
 const MQTT_USERNAME = import.meta.env.VITE_MQTT_USERNAME;
 const MQTT_PASSWORD = import.meta.env.VITE_MQTT_PASSWORD;
 const MQTT_TOPIC_CONTROL = "vfd/control";
-
 
 export default function RelayControlsPage() {
   const [client, setClient] = useState<mqtt.MqttClient | null>(null);
