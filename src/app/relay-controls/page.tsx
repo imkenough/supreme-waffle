@@ -148,7 +148,7 @@ export default function RelayControlsPage() {
                 <ItemActions>
                   {loadingStates[i] && (
                     <Badge
-                      variant="outline"
+                      variant="secondary"
                       className="flex items-center gap-1.5"
                     >
                       <Spinner />
