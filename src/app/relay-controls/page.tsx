@@ -23,6 +23,16 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // --- MQTT Configuration ---
 const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL;
@@ -41,6 +51,10 @@ export default function RelayControlsPage() {
     true,
     true,
   ]);
+  const [pendingToggle, setPendingToggle] = useState<{
+    index: number;
+    state: boolean;
+  } | null>(null);
 
   useEffect(() => {
     const mqttClient = mqtt.connect(MQTT_BROKER_URL, {
@@ -114,6 +128,17 @@ export default function RelayControlsPage() {
     });
   };
 
+  const initiateToggle = (index: number, checked: boolean) => {
+    setPendingToggle({ index, state: checked });
+  };
+
+  const confirmToggle = () => {
+    if (pendingToggle) {
+      handleRelayToggle(pendingToggle.index, pendingToggle.state);
+      setPendingToggle(null);
+    }
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -158,12 +183,36 @@ export default function RelayControlsPage() {
                   <Switch
                     id={`relay-${i + 1}`}
                     checked={relayStates[i]}
-                    onCheckedChange={(checked) => handleRelayToggle(i, checked)}
+                    onCheckedChange={(checked) => initiateToggle(i, checked)}
                   />
                 </ItemActions>
               </Item>
             ))}
           </ItemGroup>
+
+          <AlertDialog
+            open={!!pendingToggle}
+            onOpenChange={(open) => !open && setPendingToggle(null)}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Action</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to turn Relay{" "}
+                  {pendingToggle ? pendingToggle.index + 1 : ""} {pendingToggle?.state ? "ON" : "OFF"}?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={confirmToggle}
+                  variant={pendingToggle?.state === false ? "destructive" : "default"}
+                >
+                  Confirm
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </SidebarInset>
     </SidebarProvider>
