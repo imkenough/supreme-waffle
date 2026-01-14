@@ -14,9 +14,15 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemGroup,
+  ItemTitle,
+} from "@/components/ui/item";
 
 // --- MQTT Configuration ---
 const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL;
@@ -133,27 +139,31 @@ export default function RelayControlsPage() {
           <p className="text-muted-foreground">
             Control the 4-channel relay module connected to the ESP32.
           </p>
-          <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <ItemGroup className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex items-center space-x-2">
-                <Switch
-                  id={`relay-${i + 1}`}
-                  checked={relayStates[i]}
-                  onCheckedChange={(checked) => handleRelayToggle(i, checked)}
-                />
-                <Label htmlFor={`relay-${i + 1}`}>Relay {i + 1}</Label>
-                {loadingStates[i] && (
-                  <Badge
-                    variant="outline"
-                    className="flex items-center gap-1.5"
-                  >
-                    <Spinner />
-                    Updating
-                  </Badge>
-                )}
-              </div>
+              <Item key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm">
+                <ItemContent>
+                  <ItemTitle>Relay {i + 1}</ItemTitle>
+                </ItemContent>
+                <ItemActions>
+                  {loadingStates[i] && (
+                    <Badge
+                      variant="outline"
+                      className="flex items-center gap-1.5"
+                    >
+                      <Spinner />
+                      Updating
+                    </Badge>
+                  )}
+                  <Switch
+                    id={`relay-${i + 1}`}
+                    checked={relayStates[i]}
+                    onCheckedChange={(checked) => handleRelayToggle(i, checked)}
+                  />
+                </ItemActions>
+              </Item>
             ))}
-          </div>
+          </ItemGroup>
         </div>
       </SidebarInset>
     </SidebarProvider>
