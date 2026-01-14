@@ -44,14 +44,14 @@ const data = {
       icon: Power,
     },
     {
-      title: "Charts",
-      url: "/charts",
-      icon: PieChart,
-    },
-    {
       title: "Logs",
       url: "/logs",
       icon: FileText,
+    },
+    {
+      title: "Charts",
+      url: "/charts",
+      icon: PieChart,
     },
     {
       title: "Pinouts/Diagrams/Docs",

@@ -22,9 +22,11 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Status, StatusIndicator, StatusLabel } from "@/components/ui/status";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 // --- MQTT Configuration ---
-// These should be in an .env file
 const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL;
 const MQTT_USERNAME = import.meta.env.VITE_MQTT_USERNAME;
 const MQTT_PASSWORD = import.meta.env.VITE_MQTT_PASSWORD;
@@ -63,10 +65,12 @@ function LogsPage() {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    if (!MQTT_BROKER_URL) return;
+
     const mqttClient = mqtt.connect(MQTT_BROKER_URL, {
       username: MQTT_USERNAME,
       password: MQTT_PASSWORD,
-      reconnectPeriod: 5000, // Try to reconnect every 5 seconds
+      reconnectPeriod: 5000,
     });
 
     mqttClient.on("connect", () => {
@@ -75,8 +79,6 @@ function LogsPage() {
       mqttClient.subscribe(MQTT_TOPIC_LOGS, (err) => {
         if (err) {
           console.error("Log subscription error:", err);
-        } else {
-          console.log(`Subscribed to ${MQTT_TOPIC_LOGS}`);
         }
       });
     });
@@ -87,12 +89,15 @@ function LogsPage() {
           timestamp: new Date().toISOString(),
           message: message.toString(),
         };
-        setLogs((prevLogs) => [...prevLogs, newLog]);
+        setLogs((prevLogs) => {
+          const updatedLogs = [...prevLogs, newLog];
+          // Limit logs to last 500 entries to prevent memory issues
+          return updatedLogs.slice(-500);
+        });
       }
     });
 
     mqttClient.on("offline", () => {
-      console.log("MQTT client for logs offline");
       setIsConnected(false);
     });
 
@@ -102,9 +107,7 @@ function LogsPage() {
     });
 
     return () => {
-      if (mqttClient) {
-        mqttClient.end();
-      }
+      mqttClient.end();
     };
   }, []);
 
@@ -115,67 +118,91 @@ function LogsPage() {
     }
   }, [logs]);
 
+  const clearLogs = () => {
+    setLogs([]);
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Logs</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
+      <SidebarInset className="flex flex-col h-svh overflow-hidden">
+        <header className="flex h-16 shrink-0 items-center gap-2 px-4 border-b">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>Device Logs</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold md:text-2xl">Device Logs</h1>
-            <div className="flex items-center gap-2">
-              <span
-                className={`h-3 w-3 rounded-full ${
-                  isConnected ? "bg-green-500" : "bg-red-500"
-                }`}
-              ></span>
-              <span className="text-sm text-muted-foreground">
-                {isConnected ? "Connected" : "Disconnected"}
-              </span>
+
+        <main className="flex-1 flex flex-col min-h-0 p-4 lg:p-6 bg-muted/5 gap-4">
+          <div className="flex items-center justify-between shrink-0">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">System Logs</h1>
+              <p className="text-muted-foreground">
+                Real-time output from the ESP32 VFD Controller.
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <Status variant={isConnected ? "success" : "destructive"}>
+                <StatusIndicator />
+                <StatusLabel>{isConnected ? "Connected" : "Disconnected"}</StatusLabel>
+              </Status>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearLogs}
+                disabled={logs.length === 0}
+                className="gap-2"
+              >
+                <Trash2 className="size-4" />
+                Clear
+              </Button>
             </div>
           </div>
-          <Card className="flex flex-col flex-1">
-            <CardHeader>
-              <CardTitle>Real-time Log Stream</CardTitle>
-              <CardDescription>
-                Live output from the ESP32 device serial monitor.
-              </CardDescription>
+
+          <Card className="flex-1 flex flex-col min-h-0 shadow-sm border-muted-foreground/10 overflow-hidden">
+            <CardHeader className="py-3 px-4 border-b bg-muted/10 shrink-0">
+              <CardTitle className="text-sm font-medium">Log Stream</CardTitle>
             </CardHeader>
             <CardContent
               ref={logContainerRef}
-              className="flex-1 overflow-y-auto bg-muted/20 p-4 font-mono text-sm space-y-2"
+              className="flex-1 overflow-y-auto p-0 font-mono text-[13px] bg-black/5 dark:bg-black/20"
             >
               {logs.length > 0 ? (
-                logs.map((log, index) => (
-                  <div key={index} className="flex items-start">
-                    <span className="text-muted-foreground mr-4">
-                      [{new Date(log.timestamp).toLocaleTimeString()}]
-                    </span>
-                    <span className="flex-1 whitespace-pre-wrap">
-                      {log.message}
-                    </span>
-                  </div>
-                ))
+                <div className="divide-y divide-border/40">
+                  {logs.map((log, index) => (
+                    <div
+                      key={index}
+                      className="px-4 py-1.5 hover:bg-muted/30 transition-colors flex items-start group"
+                    >
+                      <span className="text-muted-foreground/60 select-none mr-3 shrink-0 tabular-nums">
+                        {new Date(log.timestamp).toLocaleTimeString([], {
+                          hour12: false,
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
+                      </span>
+                      <span className="flex-1 break-all whitespace-pre-wrap leading-relaxed text-foreground/90">
+                        {log.message}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  {isConnected
-                    ? "Waiting for logs..."
-                    : "Connecting to MQTT broker..."}
+                <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-3">
+                  {isConnected ? (
+                    <>
+                      <div className="size-2 bg-primary rounded-full animate-pulse" />
+                      <p className="text-sm">Waiting for incoming logs...</p>
+                    </>
+                  ) : (
+                    <p className="text-sm">Establishing connection to broker...</p>
+                  )}
                 </div>
               )}
             </CardContent>
